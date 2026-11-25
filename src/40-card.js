@@ -259,7 +259,9 @@ class EvCockpitCard extends HTMLElement {
     img.style.left = left + "px";
     // The scene stays still while the content scrolls, so follow the hero's position on screen
     const phone = f.width <= 760 || f.height <= 500;
-    img.style.top = (h.bottom - f.top + (phone ? 8 : 28) - meta.tyres * s) + "px";
+    let top = h.bottom - f.top + (phone ? 8 : 28) - meta.tyres * s;
+    if (!phone && top > 0 && top < 90) top = 0;   // no band of plain background above the photo on wide screens
+    img.style.top = top + "px";
   }
 
   _topHtml() {

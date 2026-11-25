@@ -122,7 +122,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). A new make is usually one block in `src/
 
 ## Pictures
 
-The Tesla and Volkswagen pictures included are illustrations of those cars. Tesla and Volkswagen are
+The Tesla and Volkswagen pictures included are illustrations of those cars. Large screens (TVs, desktops, tablets) load a 4K version of the scene, installed by HACS next to the card or fetched from this repository's release if it is missing; phones use the smaller built-in one. Set `hires: false` to always use the built-in one. Tesla and Volkswagen are
 trademarks of their owners; this project isn't affiliated with or endorsed by either company.
 Set `image`, `side_image` and `xray_image` to use photos of your own car.
 
