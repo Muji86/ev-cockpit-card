@@ -8,7 +8,7 @@ No dependencies are needed, only Node 18 or later.
 npm run check      # builds dist/ and runs scripts/test.mjs
 ```
 
-`dev/harness.html` runs the built card against a mock Home Assistant. Open it in a browser, for example
+`dev/harness.html` runs the built card against a mock Home Assistant; `dev/phone.html?w=390&h=844` shows it at a real phone width (headless Chrome cannot go below 500 px). Open it in a browser, for example
 `dev/harness.html?view=energy&state=charging` (views: home, charging, location, energy, controls, settings).
 
 `dist/` is committed because HACS installs from it. Run `npm run build` before committing.
@@ -22,7 +22,7 @@ npm run check      # builds dist/ and runs scripts/test.mjs
    - `keys`: role → the entity's `translation_key`. Prefer these: they don't change when the car is renamed or with the language.
    - `suffixes`: role → the English end of the `entity_id`, for integrations that don't set translation keys.
    - `images`: `scene`, `side` and `xray` pictures, stored in `src/images/<make>/`.
-   - `sceneCar`: where the car sits in the scene picture, in pixels (`w`, `h`, the car's centre `cx`, its `roof` and the bottom of its `tyres`), so the card can frame it.
+   - `sceneCar`: where the car sits in the scene picture, in pixels (`w`, `h`, the car's centre `cx` and width `carW`, its `roof` and the bottom of its `tyres`), so the card can frame it.
 3. Add a check for it in `scripts/test.mjs`, run `npm run check` and open a pull request.
 
 The roles and what each one needs to be (sensor, number, switch, cover…) are listed in `EVC_ROLES` and `EVC_DOMAINS`.

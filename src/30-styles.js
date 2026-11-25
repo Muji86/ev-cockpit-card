@@ -187,15 +187,47 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 
 /* short screens (Nest Hub and similar): drop the hero headings to keep everything on screen */
 @media (max-height:640px){ .heads{display:none} .row3{margin-top:0} .stats4 small:last-child{display:none} }
-/* narrow screens: stack */
-@media (max-width:1000px){
-  .frame{height:auto;min-height:0} :host([fullscreen]) .frame{position:relative;height:auto;min-height:100vh}
-  .hero{min-height:260px} .row3,.heads{grid-template-columns:1fr 1fr} .heads button:nth-child(3){display:none} .row3 .p3{grid-column:1/-1}
-  .page{height:auto;overflow:visible} .g2,.g3,.g4{grid-template-columns:1fr 1fr!important}
+/* tablets and narrow windows: the card scrolls inside itself; the side rail stays */
+@media (max-width:1000px), (max-height:500px){
+  .frame{height:auto;min-height:0;overflow:visible} .scene{border-radius:inherit}
+  :host([fullscreen]) .frame{position:fixed;inset:0;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .main{min-height:0;align-content:start}
+  .home{grid-template-rows:auto auto}
+  .hero{min-height:0;height:clamp(200px,42vw,380px)}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .row3,.heads{grid-template-columns:repeat(2,minmax(0,1fr))} .heads button:nth-child(3){display:none} .row3 .p3{grid-column:1/-1}
+  .page{height:auto;overflow:visible} .g2,.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .g2>div{display:flex!important;flex-direction:column;gap:inherit;min-height:auto!important} .g2,.g3{min-height:auto!important;height:auto!important} .card{min-height:auto}
+  .g2>*,.g3>*{grid-row:auto!important;grid-column:auto!important}
+  .chart{min-height:180px} .map{min-height:55vh}
+  .dial{width:min(100%,320px)} .dial.lg{width:min(100%,360px)}
 }
-@media (max-width:640px){
-  .frame{grid-template-columns:1fr} .rail{flex-direction:row;justify-content:space-between;padding:8px 10px;border-right:0;border-bottom:1px solid var(--edge)}
-  .rail .logo,.rail .sp,.rail .me{display:none} .main{padding:12px}
-  .row3,.heads,.g2,.g3,.g4{grid-template-columns:1fr!important} .heads{display:none} .pstate{margin:0} .stats4{grid-template-columns:1fr 1fr}
+/* phones (portrait) and short landscape screens: app-style layout with a bottom tab bar */
+@media (max-width:760px), (max-height:500px){
+  :host{--u:13px}
+  .frame{grid-template-columns:1fr;grid-template-rows:1fr auto;border-radius:18px}
+  :host([fullscreen]) .frame{border-radius:0}
+  .main{order:1;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 16px max(12px,env(safe-area-inset-left,0px));gap:12px}
+  .rail{order:2;position:sticky;bottom:0;z-index:6;flex-direction:row;justify-content:space-around;gap:4px;
+    padding:8px max(8px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px));
+    border-right:0;border-top:1px solid var(--edge);background:rgba(14,20,27,.82)}
+  .rail .logo,.rail .sp,.rail .me{display:none}
+  .rail button{width:44px;height:44px} .rail button[data-tip]:hover::after{display:none}
+  .top{gap:8px}
+  .pbatt{flex:1 1 100%} .pbatt .bar6{width:100%} .pbatt>div:nth-child(3){flex:1}
+  .pstate{flex:1 1 auto;margin:0} .plimit{flex:1 1 auto;justify-content:space-between}
+  .plimit .ibtn{display:none}
+  .hero{height:clamp(170px,52vw,300px)}
+  .row3,.heads,.g2,.g3{grid-template-columns:minmax(0,1fr)!important} .heads{display:none} .row3{gap:12px;margin-top:0}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .top>*{min-width:0} .plimit{flex-wrap:wrap}
+  .stats4{grid-template-columns:repeat(4,minmax(0,1fr))} .stats4 small:last-child{display:block}
+  .panel,.card{padding:14px} .vs-top img{width:38%}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px} .tile{min-height:96px;padding:12px}
+  .seg button{padding:7px 11px} .go{height:46px} .stepper{height:48px} .stepper button{width:48px}
+  .map{min-height:50vh}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
+@media (max-height:500px){ .hero{height:58vh} }
+@media (max-width:380px){ .stats4{grid-template-columns:repeat(2,minmax(0,1fr))} .g4{grid-template-columns:minmax(0,1fr)!important} }
 `;

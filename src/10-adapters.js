@@ -99,7 +99,7 @@ const EVC_ADAPTERS = {
     },
     images: { scene: "tesla/scene", side: "tesla/side", xray: "tesla/xray" },
     // Where the car sits in the scene photo (photo pixels), so the card can frame it
-    sceneCar: { w: 1310, h: 490, cx: 640, roof: 72, tyres: 440 },
+    sceneCar: { w: 1310, h: 490, cx: 640, carW: 800, roof: 72, tyres: 440 },
     model: "Tesla",
   },
   // Volkswagen ID. family (ID.3, ID.4, ID.5, ID.7, ID. Buzz). Works with:
@@ -138,7 +138,7 @@ const EVC_ADAPTERS = {
     },
     wakeLabel: "Sync with car",
     images: { scene: "volkswagen/scene", side: "volkswagen/side", xray: "volkswagen/xray" },
-    sceneCar: { w: 1310, h: 490, cx: 640, roof: 65, tyres: 445 },
+    sceneCar: { w: 1310, h: 490, cx: 640, carW: 800, roof: 65, tyres: 445 },
     model: "Volkswagen ID.",
   },
   generic: {

@@ -2,7 +2,7 @@
 
 A full-screen Home Assistant dashboard for your electric car. It shows charge, range and the
 charging session at a glance, and has pages for charging controls, the car's location, energy
-costs and remote controls. It is built to be cast to a Nest Hub or a TV and fits the screen without scrolling.
+costs and remote controls. It is built to be cast to a Nest Hub or a TV and fits the screen without scrolling, and on phones it becomes an app-style layout with a bottom tab bar.
 
 **Supported cars**
 
@@ -59,6 +59,12 @@ data:
   dashboard_path: ev-cockpit
   view_path: car
 ```
+
+### On phones
+
+On a phone (or any screen under 760 px wide or 500 px tall) the sections stack and scroll inside the card,
+with a tab bar at the bottom. In the Home Assistant Companion app, give the car its own dashboard so the card
+can use the whole screen.
 
 ### Energy and costs
 

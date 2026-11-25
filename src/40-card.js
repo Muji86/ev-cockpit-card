@@ -226,12 +226,16 @@ class EvCockpitCard extends HTMLElement {
     if (!img || !hero || !meta || this._cfg.image) return;
     const f = r.getElementById("frame").getBoundingClientRect(), h = hero.getBoundingClientRect();
     if (!h.width) return;
-    const s = Math.max(f.width / meta.w, Math.min((h.height + 40) / (meta.tyres - meta.roof), 2.4));
+    // On phones the hero is short: fit the car to it and let the scene fill the width
+    const fit = (h.height + 40) / (meta.tyres - meta.roof);
+    const s = Math.max(f.width / meta.w, Math.min(fit, (f.width * 0.96) / (meta.carW || meta.w), 2.4));
     let left = h.left - f.left + h.width / 2 - meta.cx * s;
     left = Math.min(0, Math.max(f.width - meta.w * s, left));
     img.style.width = meta.w * s + "px";
     img.style.left = left + "px";
-    img.style.top = (h.bottom - f.top + 28 - meta.tyres * s) + "px";
+    const frame = r.getElementById("frame");   // the frame itself scrolls on phones
+    const phone = f.width <= 760 || f.height <= 500;
+    img.style.top = (h.bottom - f.top + frame.scrollTop + (phone ? 8 : 28) - meta.tyres * s) + "px";
   }
 
   _topHtml() {

@@ -75,6 +75,9 @@ card.setConfig({
 });
 document.body.appendChild(card);
 card.hass = hass;
+if (q.get("debug")) setTimeout(() => { const r = card.shadowRoot, out = [];
+  r.querySelectorAll(q.get("debug")).forEach(e => { const b = e.getBoundingClientRect(); out.push([e.className || e.id, Math.round(b.top), Math.round(b.height), getComputedStyle(e).gridTemplateRows || ""].join(" ")); });
+  const pre = document.createElement("pre"); pre.id = "debug"; pre.textContent = out.join("\n"); document.body.appendChild(pre); }, 1500);
 if (q.get("view")) setTimeout(() => { card.shadowRoot.querySelector(`[data-go="${q.get("view")}"]`).click(); }, 300);
 </script>
 </body></html>

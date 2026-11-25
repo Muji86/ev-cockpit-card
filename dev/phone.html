@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Phone frame</title>
+<!-- Headless Chrome can't go below 500 px wide, so test phone widths in a frame: phone.html?w=390&h=844&view=home&state=charging -->
+<style>html,body{margin:0;background:#000}iframe{border:0;display:block}</style>
+<script>
+const q = new URLSearchParams(location.search), f = document.createElement("iframe");
+f.width = q.get("w") || 390; f.height = q.get("h") || 844;
+f.src = "harness.html?view=" + (q.get("view") || "home") + "&state=" + (q.get("state") || "parked");
+document.addEventListener("DOMContentLoaded", () => document.body.appendChild(f));
+</script>
