@@ -92,7 +92,7 @@ const EVC_ADAPTERS = {
       charger_voltage: "charger_voltage", charge_limit: "charge_limit", charge_current: "charge_current",
       charge_switch: "charge", charge_port: "charge_port_door", charge_cable: "charge_cable", lock: "lock",
       sentry: "sentry_mode", climate: "climate", defrost: "defrost", inside_temp: "inside_temperature",
-      outside_temp: "outside_temperature", frunk: "frunk", trunk: "trunk", windows: "windows",
+      outside_temp: "outside_temperature", frunk: ["frunk", "froot", "front_trunk"], trunk: ["trunk", "boot"], windows: "windows",
       seat_left: "seat_heater_front_left", seat_right: "seat_heater_front_right", wheel_heater: "steering_wheel_heater",
       location: "location", flash: "flash_lights", honk: "honk_horn", wake: "wake", online: "status",
       update: "update", odometer: "odometer",
