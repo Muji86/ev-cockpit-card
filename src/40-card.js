@@ -202,6 +202,9 @@ class EvCockpitCard extends HTMLElement {
     if (this._ro) this._ro.disconnect();
     this._ro = new ResizeObserver(() => { this._placeScene(); if (this._view === "energy") this._drawCharts(); });
     this._ro.observe(r.getElementById("frame"));
+    // On phones and tablets the content scrolls under a still scene: keep the photo on the hero
+    const main = r.querySelector(".main");
+    main.addEventListener("scroll", () => { if (!this._sraf) this._sraf = requestAnimationFrame(() => { this._sraf = 0; this._placeScene(); }); }, { passive: true });
     this._renderDynamic();
   }
 
@@ -213,6 +216,7 @@ class EvCockpitCard extends HTMLElement {
     r.getElementById("top").innerHTML = this._topHtml();
     const v = r.getElementById("view");
     const html = { home: this._homeHtml, charging: this._chargingHtml, location: this._locationHtml, energy: this._energyHtml, controls: this._controlsHtml, settings: this._settingsHtml }[this._view].call(this);
+    if (this._shownView !== this._view) { this._shownView = this._view; const m = r.querySelector(".main"); if (m) m.scrollTop = 0; }
     v.className = "view " + (this._view === "home" ? "home" : "page") + (this._view === "location" ? " fill" : "");
     v.innerHTML = html;
     if (this._view === "location") this._mountMap();
@@ -233,9 +237,9 @@ class EvCockpitCard extends HTMLElement {
     left = Math.min(0, Math.max(f.width - meta.w * s, left));
     img.style.width = meta.w * s + "px";
     img.style.left = left + "px";
-    const frame = r.getElementById("frame");   // the frame itself scrolls on phones
+    // The scene stays still while the content scrolls, so follow the hero's position on screen
     const phone = f.width <= 760 || f.height <= 500;
-    img.style.top = (h.bottom - f.top + frame.scrollTop + (phone ? 8 : 28) - meta.tyres * s) + "px";
+    img.style.top = (h.bottom - f.top + (phone ? 8 : 28) - meta.tyres * s) + "px";
   }
 
   _topHtml() {

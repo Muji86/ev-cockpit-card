@@ -1,4 +1,4 @@
-/*! EV Cockpit Card 0.3.0 | MIT | https://github.com/Muji86/ev-cockpit-card */
+/*! EV Cockpit Card 0.3.1 | MIT | https://github.com/Muji86/ev-cockpit-card */
 (function(){
 // ---- 10-adapters.js ----
 // ── Vehicle adapters ─────────────────────────────────────────────
@@ -520,7 +520,11 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 /* tablets and narrow windows: the card scrolls inside itself; the side rail stays */
 @media (max-width:1000px), (max-height:500px){
   .frame{height:auto;min-height:0;overflow:visible} .scene{border-radius:inherit}
-  :host([fullscreen]) .frame{position:fixed;inset:0;height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .rail{position:sticky;top:0;align-self:start;height:100vh;height:100dvh}
+  /* full screen: the frame is fixed and only the content scrolls, so the menu never moves */
+  :host([fullscreen]) .frame{position:fixed;inset:0;height:100vh;height:100dvh;overflow:hidden}
+  :host([fullscreen]) .main{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  :host([fullscreen]) .rail{position:relative;height:auto;align-self:stretch}
   .main{min-height:0;align-content:start}
   .home{grid-template-rows:auto auto}
   .hero{min-height:0;height:clamp(200px,42vw,380px)}
@@ -535,10 +539,11 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 /* phones (portrait) and short landscape screens: app-style layout with a bottom tab bar */
 @media (max-width:760px), (max-height:500px){
   :host{--u:13px}
-  .frame{grid-template-columns:1fr;grid-template-rows:1fr auto;border-radius:18px}
+  .frame{display:flex;flex-direction:column;border-radius:18px}
   :host([fullscreen]) .frame{border-radius:0}
-  .main{order:1;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 16px max(12px,env(safe-area-inset-left,0px));gap:12px}
-  .rail{order:2;position:sticky;bottom:0;z-index:6;flex-direction:row;justify-content:space-around;gap:4px;
+  :host([fullscreen]) .main{flex:1 1 auto;min-height:0}
+  .main{order:1;flex:none;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 16px max(12px,env(safe-area-inset-left,0px));gap:12px}
+  .rail{order:2;position:sticky;bottom:0;top:auto;height:auto;align-self:stretch;z-index:6;flex:none;flex-direction:row;justify-content:space-around;gap:4px;
     padding:8px max(8px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px));
     border-right:0;border-top:1px solid var(--edge);background:rgba(14,20,27,.82)}
   .rail .logo,.rail .sp,.rail .me{display:none}
@@ -557,6 +562,7 @@ input[type=range]{width:100%;accent-color:var(--lime)}
   .seg button{padding:7px 11px} .go{height:46px} .stepper{height:48px} .stepper button{width:48px}
   .map{min-height:50vh}
   .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  :host([fullscreen]) .rail{position:relative}
 }
 @media (max-height:500px){ .hero{height:58vh} }
 @media (max-width:380px){ .stats4{grid-template-columns:repeat(2,minmax(0,1fr))} .g4{grid-template-columns:minmax(0,1fr)!important} }
@@ -564,7 +570,7 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 
 // ---- 40-card.js ----
 // ── The card ────────────────────────────────────────────────────
-const EVC_VERSION = "0.3.0";
+const EVC_VERSION = "0.3.1";
 
 const EVC_DEFAULTS = {
   vehicle: "tesla",
@@ -767,6 +773,9 @@ class EvCockpitCard extends HTMLElement {
     if (this._ro) this._ro.disconnect();
     this._ro = new ResizeObserver(() => { this._placeScene(); if (this._view === "energy") this._drawCharts(); });
     this._ro.observe(r.getElementById("frame"));
+    // On phones and tablets the content scrolls under a still scene: keep the photo on the hero
+    const main = r.querySelector(".main");
+    main.addEventListener("scroll", () => { if (!this._sraf) this._sraf = requestAnimationFrame(() => { this._sraf = 0; this._placeScene(); }); }, { passive: true });
     this._renderDynamic();
   }
 
@@ -778,6 +787,7 @@ class EvCockpitCard extends HTMLElement {
     r.getElementById("top").innerHTML = this._topHtml();
     const v = r.getElementById("view");
     const html = { home: this._homeHtml, charging: this._chargingHtml, location: this._locationHtml, energy: this._energyHtml, controls: this._controlsHtml, settings: this._settingsHtml }[this._view].call(this);
+    if (this._shownView !== this._view) { this._shownView = this._view; const m = r.querySelector(".main"); if (m) m.scrollTop = 0; }
     v.className = "view " + (this._view === "home" ? "home" : "page") + (this._view === "location" ? " fill" : "");
     v.innerHTML = html;
     if (this._view === "location") this._mountMap();
@@ -798,9 +808,9 @@ class EvCockpitCard extends HTMLElement {
     left = Math.min(0, Math.max(f.width - meta.w * s, left));
     img.style.width = meta.w * s + "px";
     img.style.left = left + "px";
-    const frame = r.getElementById("frame");   // the frame itself scrolls on phones
+    // The scene stays still while the content scrolls, so follow the hero's position on screen
     const phone = f.width <= 760 || f.height <= 500;
-    img.style.top = (h.bottom - f.top + frame.scrollTop + (phone ? 8 : 28) - meta.tyres * s) + "px";
+    img.style.top = (h.bottom - f.top + (phone ? 8 : 28) - meta.tyres * s) + "px";
   }
 
   _topHtml() {

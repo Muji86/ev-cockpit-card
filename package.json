@@ -1,6 +1,6 @@
 {
   "name": "ev-cockpit-card",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Full-screen Home Assistant cockpit card for electric cars: charging, controls, location and energy costs.",
   "repo": "Muji86/ev-cockpit-card",
   "license": "MIT",
