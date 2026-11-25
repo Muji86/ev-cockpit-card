@@ -4,6 +4,6 @@
 <script>
 const q = new URLSearchParams(location.search), f = document.createElement("iframe");
 f.width = q.get("w") || 390; f.height = q.get("h") || 844;
-f.src = "harness.html?view=" + (q.get("view") || "home") + "&state=" + (q.get("state") || "parked") + (q.get("scroll") ? "&scroll=" + q.get("scroll") : "") + (q.get("fs") ? "&fs=" + q.get("fs") : "");
+f.src = "harness.html?view=" + (q.get("view") || "home") + "&state=" + (q.get("state") || "parked") + (q.get("scroll") ? "&scroll=" + q.get("scroll") : "") + (q.get("fs") ? "&fs=" + q.get("fs") : "") + (q.get("car") ? "&car=" + q.get("car") : "");
 document.addEventListener("DOMContentLoaded", () => document.body.appendChild(f));
 </script>

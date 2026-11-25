@@ -34,6 +34,9 @@ const evcIc = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24">${EVC_IC
 const EVC_TESLA_LOGO = '<svg class="logo" viewBox="0 0 100 100" aria-label="Tesla"><path d="M6 17c24-11 64-11 88 0l-2.5 6.5c-11-4.6-23-6.6-34-6.8L50 25l-7.5-8.3c-11 .2-23 2.2-34 6.8z"/><path d="M42.5 25.5h15L53 30.5 50 94l-3-63.5z"/></svg>';
 const evcEsc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const evcImg = key => (window.__evcImages || {})[key] || "";
+// 4K scenes ship next to the card file (HACS installs them from the release); if they're missing, use the release on GitHub
+const EVC_BASE = import.meta.url;
+const evcHires = name => [new URL(`ev-cockpit-${name}.webp`, EVC_BASE).href, `https://cdn.jsdelivr.net/gh/__REPO__@v${EVC_VERSION}/dist/ev-cockpit-${name}.webp`];
 
 class EvCockpitCard extends HTMLElement {
   static getConfigElement() { return document.createElement("ev-cockpit-card-editor"); }
@@ -152,7 +155,8 @@ class EvCockpitCard extends HTMLElement {
   _secondsLeft() {
     const v = this._st("time_to_full");
     if (!v || !this._isCharging()) return null;
-    const t = new Date(v).getTime();
+    const asNum = /^\d+(\.\d+)?$/.test(String(v).trim());   // "95" is minutes, not the year 1995
+    const t = asNum ? NaN : new Date(v).getTime();
     if (!isNaN(t)) { const s = Math.round((t - Date.now()) / 1000); return s > 0 ? s : null; }
     const n = parseFloat(v); // some integrations report hours or minutes as a number
     if (isNaN(n) || n <= 0) return null;
@@ -199,6 +203,7 @@ class EvCockpitCard extends HTMLElement {
       </div>`;
     const img = r.getElementById("photo");
     if (img) img.addEventListener("load", () => this._placeScene());
+    this._loadHires(img);
     if (this._ro) this._ro.disconnect();
     this._ro = new ResizeObserver(() => { this._placeScene(); if (this._view === "energy") this._drawCharts(); });
     this._ro.observe(r.getElementById("frame"));
@@ -224,6 +229,20 @@ class EvCockpitCard extends HTMLElement {
     requestAnimationFrame(() => this._placeScene());
   }
 
+  // Swap the built-in scene for the 4K one on screens that can show it (TVs, desktops, tablets)
+  _loadHires(img) {
+    const name = this._resolved.adapter.hires;
+    if (!img || !name || this._cfg.image || this._cfg.hires === false) return;
+    const px = Math.max(window.innerWidth, window.innerHeight) * (window.devicePixelRatio || 1);
+    if (px < 1500) return;
+    if (this._hiresSrc) { img.src = this._hiresSrc; return; }
+    const urls = evcHires(name), probe = new Image();
+    let i = 0;
+    probe.onload = () => { this._hiresSrc = probe.src; const cur = this.shadowRoot.getElementById("photo"); if (cur) cur.src = probe.src; };
+    probe.onerror = () => { if (++i < urls.length) probe.src = urls[i]; };
+    probe.src = urls[0];
+  }
+
   _placeScene() {
     const r = this.shadowRoot, img = r && r.getElementById("photo"), hero = r && r.getElementById("hero");
     const meta = this._resolved && this._resolved.adapter.sceneCar;
@@ -232,7 +251,8 @@ class EvCockpitCard extends HTMLElement {
     if (!h.width) return;
     // On phones the hero is short: fit the car to it and let the scene fill the width
     const fit = (h.height + 40) / (meta.tyres - meta.roof);
-    const s = Math.max(f.width / meta.w, Math.min(fit, (f.width * 0.96) / (meta.carW || meta.w), 2.4));
+    const narrow = f.width <= 760;
+    const s = Math.max(f.width / meta.w, Math.min(fit, (f.width * (narrow ? 0.96 : 0.62)) / (meta.carW || meta.w), 2.4));
     let left = h.left - f.left + h.width / 2 - meta.cx * s;
     left = Math.min(0, Math.max(f.width - meta.w * s, left));
     img.style.width = meta.w * s + "px";
@@ -356,7 +376,7 @@ class EvCockpitCard extends HTMLElement {
     if (ch) {
       return `${this._ticks((b || 0) / 100, true)}<div class="in"><div class="cap">Charging to ${this._fmt(lim)}%</div>
         <div class="clock" data-clock>${left ? this._hms(left) : `${this._fmt(b)}<span>%</span>`}</div>
-        <div class="tri"><div>${evcIc("bolt")}${this._fmt(kw, 1)} kW<small>Power</small></div><div>${evcIc("plus")}${this._fmt(added, 1)} kWh<small>Added</small></div><div>${evcIc("clock")}${left ? this._clock(left) : "--"}<small>Finish</small></div></div>
+        <div class="tri"><div>${evcIc("bolt")}${this._fmt(kw, 1)} kW<small>Power</small></div>${this._id("energy_added") ? `<div>${evcIc("plus")}${this._fmt(added, 1)} kWh<small>Added</small></div>` : `<div>${evcIc("lock")}${this._fmt(this._num("charge_limit"))}%<small>Limit</small></div>`}<div>${evcIc("clock")}${left ? this._clock(left) : "--"}<small>Finish</small></div></div>
         ${(this._id("charge_switch") || this._id("charge_stop")) ? `<button class="go" data-act="charge_off" aria-label="Stop charging"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>` : ""}</div>`;
     }
     const plugged = this._plugged(), cs = this._chargeState();

@@ -98,8 +98,9 @@ const EVC_ADAPTERS = {
       update: "update", odometer: "odometer",
     },
     images: { scene: "tesla/scene", side: "tesla/side", xray: "tesla/xray" },
-    // Where the car sits in the scene photo (photo pixels), so the card can frame it
-    sceneCar: { w: 1310, h: 490, cx: 640, carW: 800, roof: 72, tyres: 440 },
+    hires: "tesla-scene",   // 4K scene, loaded on large screens (dist/ev-cockpit-tesla-scene.webp)
+    // Where the car sits in the scene photo (pixels of the 4K scene), so the card can frame it
+    sceneCar: { w: 2700, h: 984, cx: 1323, carW: 1654, roof: 132, tyres: 890 },
     model: "Tesla",
   },
   // Volkswagen ID. family (ID.3, ID.4, ID.5, ID.7, ID. Buzz). Works with:
@@ -138,7 +139,8 @@ const EVC_ADAPTERS = {
     },
     wakeLabel: "Sync with car",
     images: { scene: "volkswagen/scene", side: "volkswagen/side", xray: "volkswagen/xray" },
-    sceneCar: { w: 1310, h: 490, cx: 640, carW: 800, roof: 65, tyres: 445 },
+    hires: "volkswagen-scene",
+    sceneCar: { w: 2700, h: 984, cx: 1332, carW: 1656, roof: 110, tyres: 910 },
     model: "Volkswagen ID.",
   },
   generic: {

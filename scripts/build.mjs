@@ -29,7 +29,7 @@ const code = `/*! EV Cockpit Card ${pkg.version} | MIT | https://github.com/${pk
   .replace(/__VERSION__/g, pkg.version).replace(/__REPO__/g, pkg.repo);
 
 writeFileSync(join(root, "dist/ev-cockpit-card.js"), images + code);
-// Split build for hosts that limit file size (images and code as two resources)
-writeFileSync(join(root, "dist/ev-cockpit-card-images.js"), images);
-writeFileSync(join(root, "dist/ev-cockpit-card-code.js"), code);
+// 4K scenes: src/hires/<name>.webp → dist/ev-cockpit-<name>.webp (attached to each release; HACS installs them)
+for (const f of readdirSync(join(root, "src/hires")).filter(f => f.endsWith(".webp")))
+  writeFileSync(join(root, "dist/ev-cockpit-" + f), readFileSync(join(root, "src/hires", f)));
 console.log(`Built ${pkg.version}: ${(Buffer.byteLength(images + code) / 1024).toFixed(0)} KB (code ${(Buffer.byteLength(code) / 1024).toFixed(0)} KB)`);
