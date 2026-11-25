@@ -53,6 +53,25 @@ const EvcModel = {
     return out;
   },
 
+  // Battery levels reach Home Assistant when the car syncs, so a rise can be reported an hour after the
+  // meter saw it. Where an hour has more car charging than the meter recorded, move the excess to the
+  // neighbouring hours with room on the meter (earlier first), keeping `base` kWh for the house.
+  // hours: [{ car, meter }] in time order; changes car in place.
+  alignToMeter(hours, base = 0.1) {
+    const room = i => { const h = hours[i]; return h && h.meter != null && h.car != null ? Math.max(0, h.meter - base - h.car) : 0; };
+    hours.forEach((h, i) => {
+      if (h.car == null || h.meter == null || h.car <= h.meter) return;
+      let extra = h.car - h.meter;
+      h.car = h.meter;
+      for (const j of [i - 1, i - 2, i + 1, i + 2]) {
+        if (extra <= 0) break;
+        const take = Math.min(extra, room(j));
+        if (take > 0) { hours[j].car += take; extra -= take; }
+      }
+    });
+    return hours;
+  },
+
   // Off-peak or not, from the real price paid that hour (cost ÷ energy); null when it can't tell.
   offFromCost(cost, kwh, t) {
     if (cost == null || !(kwh > 0.2)) return null;   // costs are rounded to the penny: small hours are too noisy
@@ -136,6 +155,7 @@ async function evcLoadEnergy(hass, cfg) {
   }
   if (e.cost_statistic) (res[e.cost_statistic] || []).forEach(r => { (hours[r.start] || (hours[r.start] = { car: null, meter: null })).cost = r.change; });
   if (e.home_statistic) row(e.home_statistic, "meter");
+  if (src !== "energy") EvcModel.alignToMeter(Object.keys(hours).sort((a, b) => a - b).map(k => hours[k]));
   const usage = {}, days = {}, counts = {};
   Object.entries(hours).forEach(([st, h]) => {
     const p = parts(new Date(Number(st))), m = months[p.key];

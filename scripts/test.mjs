@@ -82,6 +82,11 @@ const night = [[75, 75], [75.66, 76], [78.34, 79], [79.53, 80], [75.9, 80]].map(
 const byMax = M.socToKwh(night, 77, 0.9);
 assert.ok(Math.abs(byMax[1 * 3600e3] - 0.01 * 77 / 0.9) < 0.01 && Math.abs(byMax[2 * 3600e3] - 0.03 * 77 / 0.9) < 0.01, "rise counted in the hour it happened");
 
+// Charging reported an hour late moves back to the hour the meter saw it (20–21 Nov: 5% of 77 kWh ≈ 4.3 kWh)
+const al = M.alignToMeter([{ car: 0.86, meter: 2.43 }, { car: 2.57, meter: 1.53 }, { car: 0.86, meter: 0.98 }]);
+assert.ok(Math.abs(al.reduce((a, h) => a + h.car, 0) - 4.29) < 0.01, "nothing lost");
+assert.ok(al.every(h => h.car <= h.meter + 1e-9), "never more than the meter");
+
 // Real off-peak hours from the hourly cost: 6.66p and 36.46p, and the standing-charge hour is ignored
 const edf = { offpeak_rate: 0.0666, peak_rate: 0.3646 };
 assert.equal(M.offFromCost(0.0666 * 2, 2, edf), true);
