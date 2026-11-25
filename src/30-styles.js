@@ -187,8 +187,9 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 
 /* short screens (Nest Hub and similar): drop the hero headings to keep everything on screen */
 @media (max-height:640px){ .heads{display:none} .row3{margin-top:0} .stats4 small:last-child{display:none} }
-/* tablets and narrow windows: the card scrolls inside itself; the side rail stays */
-@media (max-width:1000px), (max-height:500px){
+/* tablets and narrow windows: the card scrolls inside itself; the side rail stays.
+   Wide screens under 1000px keep the full-screen layout: Home Assistant Cast draws at 960×540 and scales it up to the TV. */
+@media (max-width:1000px) and (max-aspect-ratio:3/2), (max-height:500px){
   .frame{height:auto;min-height:0;overflow:visible} .scene{border-radius:inherit}
   .rail{position:sticky;top:0;align-self:start;height:100vh;height:100dvh}
   /* full screen: the frame is fixed and only the content scrolls, so the menu never moves */
