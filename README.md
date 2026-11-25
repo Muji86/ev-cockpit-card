@@ -132,6 +132,20 @@ power as that hour's kWh; only use it if the sensor drops to 0 when charging sto
 the usual off-peak hours. Set `energy.cost_statistic` to your supplier's hourly cost statistic (the Octopus
 Energy integration makes one for Octopus and EDF) and the card prices every hour at the rate you actually paid.
 
+**Use your supplier's own charging figures.** On Octopus Intelligent or EDF Smart Charge, the supplier reports
+the kWh it put into the car for every half-hour slot. Point the card at that sensor and those figures replace the
+estimate for as far back as Home Assistant keeps history (usually 10 days):
+
+```yaml
+energy:
+  dispatch_entity: binary_sensor.octopus_energy_..._intelligent_dispatching
+  measured_statistic: sensor.my_car_supplier_charging_energy   # optional, see below
+```
+
+Home Assistant only keeps that sensor's history for a few days. To keep the supplier's figures for longer,
+make a kWh total of them (a sensor with `state_class: total`) and set it as `measured_statistic`: from the
+hour it starts, it replaces the estimate too. Older months keep using `car_statistic`.
+
 ### All options
 
 | Option | Default | What it does |

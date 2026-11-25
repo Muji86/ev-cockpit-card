@@ -87,6 +87,13 @@ const al = M.alignToMeter([{ car: 0.86, meter: 2.43 }, { car: 2.57, meter: 1.53 
 assert.ok(Math.abs(al.reduce((a, h) => a + h.car, 0) - 4.29) < 0.01, "nothing lost");
 assert.ok(al.every(h => h.car <= h.meter + 1e-9), "never more than the meter");
 
+// Supplier slots: a later figure for the same half-hour replaces the earlier one; slots add up per hour
+const dh = M.dispatchHours([
+  { completed_dispatches: [{ start: "2026-11-25T00:00:00+00:00", charge_in_kwh: -1.2 }] },
+  { completed_dispatches: [{ start: "2026-11-25T00:00:00+00:00", charge_in_kwh: -1.3 }, { start: "2026-11-25T00:30:00+00:00", charge_in_kwh: -1.2 }] },
+]);
+assert.ok(Math.abs(dh[Date.parse("2026-11-25T00:00:00Z")] - 2.5) < 1e-9, "revised slot + second slot in the same hour");
+
 // Real off-peak hours from the hourly cost: 6.66p and 36.46p, and the standing-charge hour is ignored
 const edf = { offpeak_rate: 0.0666, peak_rate: 0.3646 };
 assert.equal(M.offFromCost(0.0666 * 2, 2, edf), true);

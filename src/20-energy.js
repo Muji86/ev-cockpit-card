@@ -72,6 +72,20 @@ const EvcModel = {
     return hours;
   },
 
+  // Smart-charging slots reported by the supplier (Octopus / EDF "completed_dispatches"): the latest
+  // figure for each half-hour wins, because slots are sometimes revised after they first appear.
+  // attrsList: attribute objects in time order. Returns { [hourStartMs]: kWh }.
+  dispatchHours(attrsList) {
+    const slots = {};
+    attrsList.forEach(a => (a && a.completed_dispatches || []).forEach(d => {
+      const t = Date.parse(d.start), kwh = Math.abs(parseFloat(d.charge_in_kwh));
+      if (!isNaN(t) && !isNaN(kwh)) slots[t] = kwh;
+    }));
+    const hours = {};
+    Object.entries(slots).forEach(([t, kwh]) => { const h = Math.floor(t / 3600e3) * 3600e3; hours[h] = (hours[h] || 0) + kwh; });
+    return hours;
+  },
+
   // Off-peak or not, from the real price paid that hour (cost ÷ energy); null when it can't tell.
   offFromCost(cost, kwh, t) {
     if (cost == null || !(kwh > 0.2)) return null;   // costs are rounded to the penny: small hours are too noisy
@@ -133,7 +147,7 @@ async function evcLoadEnergy(hass, cfg) {
   // car_source: "energy" (kWh counter, default), "power" (charging power in kW: the hourly mean is the kWh)
   // or "soc" (battery level: each rise × battery_kwh ÷ charge_efficiency)
   const src = e.car_source || "energy";
-  const ids = [e.car_statistic, e.home_statistic, e.cost_statistic].filter(Boolean);
+  const ids = [e.car_statistic, e.home_statistic, e.cost_statistic, e.measured_statistic].filter(Boolean);
   const res = await hass.callWS({
     type: "recorder/statistics_during_period", start_time: new Date(start.getTime() - 3600e3).toISOString(), end_time: now.toISOString(),
     statistic_ids: ids, period: "hour", types: src === "energy" ? ["change"] : ["change", "mean", "max"], units: { energy: "kWh", power: "kW" },
@@ -153,18 +167,45 @@ async function evcLoadEnergy(hass, cfg) {
       : Object.fromEntries(rows.map(r => [r.start, Math.max(0, r.mean || 0)]));
     Object.entries(kwh).forEach(([st, v]) => { (hours[st] || (hours[st] = { car: null, meter: null })).car = v; });
   }
+  const hourOf = st => hours[st] || (hours[st] = { car: null, meter: null });
+  // Measured charging replaces the estimate from the hour it starts. measured_statistic: a kWh total of the
+  // supplier's smart-charging slots (reported late, so lined up with the meter below).
+  if (e.measured_statistic) {
+    const rows = (res[e.measured_statistic] || []).filter(r => r.change != null).sort((a, b) => a.start - b.start);
+    if (rows.length) {
+      Object.keys(hours).forEach(st => { if (+st >= rows[0].start) hours[st].car = 0; });
+      rows.forEach(r => { const h = hourOf(r.start); h.car = Math.max(0, r.change); h.exact = true; });
+    }
+  }
+  // dispatch_entity: the supplier's smart-charging sensor; its recent history gives every slot at its real time
+  if (e.dispatch_entity) {
+    try {
+      const hist = await hass.callWS({ type: "history/history_during_period", start_time: start.toISOString(), end_time: now.toISOString(),
+        entity_ids: [e.dispatch_entity], minimal_response: false, no_attributes: false, significant_changes_only: false });
+      const states = hist[e.dispatch_entity] || [];
+      const cur = hass.states[e.dispatch_entity];
+      const attrs = states.map(x => x.a || x.attributes || {}).concat(cur ? [cur.attributes] : []);
+      const slots = EvcModel.dispatchHours(attrs), times = Object.keys(slots).map(Number);
+      const firstSeen = states.length ? (states[0].lu || states[0].last_updated_ts || 0) * 1000 : Date.now();
+      const from = Math.floor(Math.min(firstSeen, ...(times.length ? times : [firstSeen])) / 3600e3) * 3600e3;
+      Object.keys(hours).forEach(st => { if (+st >= from) { hours[st].car = 0; hours[st].exact = true; } });
+      times.forEach(t => { const h = hourOf(t); h.car = slots[t]; h.exact = true; });
+    } catch (err) { /* history unavailable: keep the other sources */ }
+  }
   if (e.cost_statistic) (res[e.cost_statistic] || []).forEach(r => { (hours[r.start] || (hours[r.start] = { car: null, meter: null })).cost = r.change; });
   if (e.home_statistic) row(e.home_statistic, "meter");
-  if (src !== "energy") EvcModel.alignToMeter(Object.keys(hours).sort((a, b) => a - b).map(k => hours[k]));
+  if (src !== "energy" || e.measured_statistic) EvcModel.alignToMeter(Object.keys(hours).sort((a, b) => a - b).map(k => hours[k]));
+  // Counters and the supplier's slots are home charging; estimates only count where the house meter saw them
+  const trusted = h => src === "energy" || h.exact;
   const usage = {}, days = {}, counts = {};
   Object.entries(hours).forEach(([st, h]) => {
     const p = parts(new Date(Number(st))), m = months[p.key];
     const realOff = EvcModel.offFromCost(h.cost, h.meter, t);
     const isOff = realOff == null ? windowOff(p.hour) : realOff, b = isOff ? "off" : "peak";
     // Battery level or power can't tell home from a public charger: only hours the house meter saw count
-    if (m && h.car) m.car[b] += src === "energy" ? h.car : (h.meter == null ? 0 : Math.min(h.car, h.meter));
+    if (m && h.car) m.car[b] += trusted(h) && h.meter == null ? h.car : (h.meter == null ? 0 : Math.min(h.car, h.meter));
     const u = usage[p.day] || (usage[p.day] = { car: { off: 0, peak: 0 }, home: { off: 0, peak: 0 }, meter: 0 });
-    u.car[b] += h.meter == null ? (src === "energy" ? (h.car || 0) : 0) : Math.min(h.car || 0, h.meter);
+    u.car[b] += h.meter == null ? (trusted(h) ? (h.car || 0) : 0) : Math.min(h.car || 0, h.meter);
     if (h.meter == null) return;
     u.meter++;
     const car = Math.min(h.car || 0, h.meter);   // the car can't use more than the meter recorded

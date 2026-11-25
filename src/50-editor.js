@@ -38,6 +38,8 @@ class EvCockpitCardEditor extends HTMLElement {
           { name: "charge_efficiency", label: "Charging efficiency (0–1)", selector: { number: { min: 0.5, max: 1, step: 0.01, mode: "box" } } },
         ] },
         { name: "cost_statistic", label: "Hourly cost statistic (optional: finds the real off-peak hours)", selector: { statistic: {} } },
+        { name: "dispatch_entity", label: "Smart charging sensor with completed slots (Octopus / EDF, optional)", selector: { entity: { domain: "binary_sensor" } } },
+        { name: "measured_statistic", label: "Measured charging total, kWh (optional, replaces the estimate)", selector: { statistic: {} } },
         { name: "home_statistic", label: "Whole-house electricity meter (optional)", selector: { statistic: {} } },
         { name: "months", label: "Months of history", selector: { number: { min: 2, max: 24, mode: "box" } } },
       ] },
