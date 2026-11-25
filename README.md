@@ -4,6 +4,17 @@ A full-screen Home Assistant dashboard for your electric car. It shows charge, r
 charging session at a glance, and has pages for charging controls, the car's location, energy
 costs and remote controls. It is built to be cast to a Nest Hub or a TV and fits the screen without scrolling, and on phones it becomes an app-style layout with a bottom tab bar.
 
+![Overview of a Tesla Model Y charging, on a TV](https://raw.githubusercontent.com/Muji86/ev-cockpit-card/main/docs/tesla-overview.jpg)
+
+<p>
+  <img src="https://raw.githubusercontent.com/Muji86/ev-cockpit-card/main/docs/volkswagen-overview.jpg" alt="Overview of a Volkswagen ID.4" width="66%">
+  <img src="https://raw.githubusercontent.com/Muji86/ev-cockpit-card/main/docs/phone.jpg" alt="The card on a phone, with the tab bar at the bottom" width="30%">
+</p>
+
+![Energy and costs: monthly charging, 30-day usage and what a different tariff, home battery or charger would save](https://raw.githubusercontent.com/Muji86/ev-cockpit-card/main/docs/energy.jpg)
+
+*Screenshots use example data.*
+
 **Supported cars**
 
 | Make | Integration | Status |
