@@ -111,6 +111,27 @@ home_battery:               # optional: a home battery to compare
 ev_charger_kw: 7            # optional: a faster home charger to compare
 ```
 
+**No kWh counter for the car?** The card can work out home charging from the car's battery level
+or its charging power instead:
+
+```yaml
+energy:
+  car_source: soc                 # energy (default) | power | soc
+  car_statistic: sensor.my_car_battery_level
+  battery_kwh: 77                 # usable battery size, for soc
+  charge_efficiency: 0.9          # share of the wall energy that reaches the battery
+  home_statistic: sensor.electricity_meter_energy
+  cost_statistic: sensor.electricity_meter_cost   # optional, see below
+```
+
+Each rise in battery level becomes the energy drawn from the wall, capped at what the house meter
+recorded that hour, so charging away from home isn't counted. `power` treats each hour's average charging
+power as that hour's kWh; only use it if the sensor drops to 0 when charging stops.
+
+**Smart tariffs** (Octopus Intelligent, EDF GoElectric with Smart Charge and similar) add cheap slots outside
+the usual off-peak hours. Set `energy.cost_statistic` to your supplier's hourly cost statistic (the Octopus
+Energy integration makes one for Octopus and EDF) and the card prices every hour at the rate you actually paid.
+
 ### All options
 
 | Option | Default | What it does |

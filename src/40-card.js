@@ -566,7 +566,8 @@ class EvCockpitCard extends HTMLElement {
 
   _scenarios() {
     const c = this._cfg, t = c.tariff;
-    const now = { off: t.offpeak_rate, peak: t.peak_rate, s: t.offpeak_start, e: t.offpeak_end, standing: this._standing() };
+    // "Today" uses the real off-peak hours when the hourly cost is known (Smart Charge slots included)
+    const now = { off: t.offpeak_rate, peak: t.peak_rate, s: t.offpeak_start, e: t.offpeak_end, standing: this._standing(), actual: true };
     const cmp = c.compare ? { off: c.compare.offpeak_rate, peak: c.compare.peak_rate, s: c.compare.offpeak_start, e: c.compare.offpeak_end, standing: c.compare.standing_charge ?? now.standing } : null;
     const base = cmp || now;
     const hb = c.home_battery;

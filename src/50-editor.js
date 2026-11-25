@@ -30,7 +30,14 @@ class EvCockpitCardEditor extends HTMLElement {
         { name: "standing_charge_entity", label: "Standing charge sensor (optional)", selector: { entity: { domain: "sensor" } } },
       ] },
       { name: "energy", type: "expandable", title: "Charging history and costs", schema: [
-        { name: "car_statistic", label: "Car's home charging energy (kWh, total increasing)", selector: { statistic: {} } },
+        { name: "car_source", label: "The car statistic is…", selector: { select: { mode: "dropdown", options: [
+          { value: "energy", label: "Energy (kWh counter)" }, { value: "power", label: "Charging power (kW)" }, { value: "soc", label: "Battery level (%)" }] } } },
+        { name: "car_statistic", label: "Car's home charging statistic", selector: { statistic: {} } },
+        { type: "grid", name: "", schema: [
+          { name: "battery_kwh", label: "Battery size, kWh (for battery level)", selector: { number: { min: 10, max: 200, step: 0.1, mode: "box" } } },
+          { name: "charge_efficiency", label: "Charging efficiency (0–1)", selector: { number: { min: 0.5, max: 1, step: 0.01, mode: "box" } } },
+        ] },
+        { name: "cost_statistic", label: "Hourly cost statistic (optional: finds the real off-peak hours)", selector: { statistic: {} } },
         { name: "home_statistic", label: "Whole-house electricity meter (optional)", selector: { statistic: {} } },
         { name: "months", label: "Months of history", selector: { number: { min: 2, max: 24, mode: "box" } } },
       ] },

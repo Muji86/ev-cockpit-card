@@ -72,4 +72,22 @@ assert.equal(Math.round(plain.cost * 100), Math.round((15 * 0.1 + 19 * 0.3 + 0.5
 const withBatt = M.dayCost(day, tariff, { usable: 10, eff: 0.9, kw: 5 }, null);
 assert.ok(withBatt.cost < plain.cost, "a battery should lower the bill");
 
+// Battery level → kWh: 56% → 80% over the night is 24% of 77 kWh, plus 10% charging losses
+const soc = [56, 56, 59, 62, 65, 68, 71, 74, 77, 80, 80, 79].map((mean, i) => ({ start: i * 3600e3, mean }));
+const kwh = M.socToKwh(soc, 77, 0.9), total = Object.values(kwh).reduce((a, b) => a + b, 0);
+assert.ok(Math.abs(total - 0.24 * 77 / 0.9) < 0.01, "SoC rise turns into wall kWh");
+assert.equal(kwh[11 * 3600e3], 0, "a falling battery level is not charging");
+
+// Real off-peak hours from the hourly cost: 6.66p and 36.46p, and the standing-charge hour is ignored
+const edf = { offpeak_rate: 0.0666, peak_rate: 0.3646 };
+assert.equal(M.offFromCost(0.0666 * 2, 2, edf), true);
+assert.equal(M.offFromCost(0.3646 * 2, 2, edf), false);
+assert.equal(M.offFromCost(0.0666 * 0.4 + 0.51835, 0.4, edf), null, "hour carrying the standing charge falls back to the window");
+assert.equal(M.offFromCost(0.1, 0, edf), null);
+// A Smart Charge slot at 06:00 is off-peak on the real tariff, but not in the fixed 23:00–06:00 window
+const slot = { hour: 6, home: 1, car: 7, off: true };
+const real = M.dayCost([slot], { off: 0.0666, peak: 0.3646, s: 23, e: 6, standing: 0, actual: true }, null, null);
+const fixed = M.dayCost([slot], { off: 0.0666, peak: 0.3646, s: 23, e: 6, standing: 0 }, null, null);
+assert.ok(real.cost < fixed.cost, "Smart Charge slot priced off-peak");
+
 console.log("All checks passed");
