@@ -9,7 +9,7 @@ costs and remote controls. It is built to be cast to a Nest Hub or a TV and fits
 | Make | Integration | Status |
 | --- | --- | --- |
 | Tesla | [Tesla Fleet](https://www.home-assistant.io/integrations/tesla_fleet/), [Teslemetry](https://www.home-assistant.io/integrations/teslemetry/), Tessie | Tested with Tesla Fleet |
-| Volkswagen ID. | [We Connect ID](https://github.com/mitch-dc/volkswagen_we_connect_id) (HACS), Car-Net | Early: please report missing entities |
+| Volkswagen ID. | An MQTT bridge with German entity names (tested on an ID.4); [We Connect ID](https://github.com/mitch-dc/volkswagen_we_connect_id) and Car-Net (early) | Charging, charge limit, climate and sync work through the car's buttons; the lock is read only |
 | Any other car | Choose the entities yourself (`vehicle: generic`) | Works with whatever your car exposes |
 
 ## What it shows

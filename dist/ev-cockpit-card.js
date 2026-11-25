@@ -3,7 +3,7 @@ i["tesla/scene"]="data:image/webp;base64,UklGRloJAQBXRUJQVlA4IE4JAQBw6gSdASoeBeo
 i["tesla/side"]="data:image/webp;base64,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";
 i["tesla/xray"]="data:image/webp;base64,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";
 window.dispatchEvent(new Event("evc-images"));})();
-/*! EV Cockpit Card 0.1.0 | MIT | https://github.com/Muji86/ev-cockpit-card */
+/*! EV Cockpit Card 0.2.0 | MIT | https://github.com/Muji86/ev-cockpit-card */
 (function(){
 // ---- 10-adapters.js ----
 // ── Vehicle adapters ─────────────────────────────────────────────
@@ -48,6 +48,11 @@ const EVC_ROLES = {
   online: "Online (binary sensor)",
   update: "Software update",
   odometer: "Odometer",
+  charge_start: "Start charging (button)",
+  charge_stop: "Stop charging (button)",
+  climate_start: "Start climate (button)",
+  climate_stop: "Stop climate (button)",
+  something_open: "Something open (binary sensor)",
 };
 
 const EVC_ADAPTERS = {
@@ -105,21 +110,41 @@ const EVC_ADAPTERS = {
     sceneCar: { w: 1310, h: 490, cx: 640, roof: 72, tyres: 440 },
     model: "Tesla",
   },
-  // Volkswagen ID. family (ID.3, ID.4, ID.5, ID.7, ID. Buzz) through the community
-  // "Volkswagen We Connect ID" integration (volkswagen_we_connect_id) or "Volkswagen Car-Net"
-  // (volkswagencarnet). Neither sets translation keys, so entities are matched on their
-  // English entity_id endings. Not yet checked against a real car: report gaps in an issue.
+  // Volkswagen ID. family (ID.3, ID.4, ID.5, ID.7, ID. Buzz). Works with:
+  //  - an MQTT bridge that publishes the car as a "Volkswagen" device with German entity names
+  //    (sensor.<car>_soc, select.<car>_ladelimit, button.<car>_laden_stoppen…), checked against a real ID.4;
+  //  - the community "Volkswagen We Connect ID" and "Volkswagen Car-Net" integrations (English names; not yet
+  //    checked against a real car).
+  // None of these set translation keys, so entities are matched on the end of their entity_id.
   volkswagen: {
     name: "Volkswagen ID.",
-    platforms: ["volkswagen_we_connect_id", "volkswagencarnet"],
+    platforms: ["volkswagen_we_connect_id", "volkswagencarnet", "mqtt"],
+    manufacturers: ["volkswagen", "vw"],   // MQTT devices must be a Volkswagen
     keys: {},
     suffixes: {
-      battery: "state_of_charge", range: "range", charging: "charging_state", charger_power: "charge_power",
-      time_to_full: "remaining_charging_time", charge_limit: "target_state_of_charge", charge_current: "max_charge_current_ac",
-      charge_switch: "charging", charge_cable: "plug_connection_state", lock: "door_lock",
-      climate: "climatisation", inside_temp: "inside_temperature", outside_temp: "outside_temperature",
-      location: "position", odometer: "odometer", windows: "window_heating", online: "online",
+      battery: ["state_of_charge", "soc"],
+      range: ["range", "reichweite"],
+      charging: ["charging_state", "charging"],
+      charger_power: ["charge_power", "ladeleistung"],
+      time_to_full: ["remaining_charging_time", "restladezeit"],
+      charge_limit: ["target_state_of_charge", "ladelimit"],
+      charge_current: ["max_charge_current_ac"],
+      charge_switch: ["charging"],
+      charge_start: ["start_charging", "laden_starten", "laden_fortsetzen"],
+      charge_stop: ["stop_charging", "laden_stoppen"],
+      charge_cable: ["plug_connection_state", "charger", "kabel"],
+      lock: ["door_lock", "verriegelt"],
+      climate: ["climatisation", "klimatisierung"],
+      climate_start: ["start_climate", "klimatisierung_starten"],
+      climate_stop: ["stop_climate", "klimatisierung_stoppen"],
+      inside_temp: ["inside_temperature"],
+      outside_temp: ["outside_temperature"],
+      location: ["position"],
+      odometer: ["odometer", "kilometerstand"],
+      wake: ["fahrzeug_synchronisieren", "refresh_data"],
+      something_open: ["something_open", "doors_open"],
     },
+    wakeLabel: "Sync with car",
     images: { scene: "volkswagen/scene", side: "volkswagen/side", xray: "volkswagen/xray" },
     sceneCar: { w: 1310, h: 490, cx: 640, roof: 65, tyres: 445 },
     model: "Volkswagen ID.",
@@ -135,39 +160,55 @@ const EVC_ADAPTERS = {
   },
 };
 
+// Which entity types each role may be. Read-only alternatives (a lock or climate reported only by a
+// binary sensor) are allowed; the card then shows the state and uses buttons where the car has them.
 const EVC_DOMAINS = {
-  charge_limit: "number", charge_current: "number", charge_switch: "switch", charge_port: "cover", charge_cable: "binary_sensor",
-  lock: "lock", sentry: "switch", climate: "climate", defrost: "switch", frunk: "cover", trunk: "cover", windows: "cover",
-  seat_left: "select", seat_right: "select", wheel_heater: "select", location: "device_tracker", flash: "button",
-  honk: "button", wake: "button", online: "binary_sensor", update: "update",
+  charging: ["sensor", "binary_sensor"], charge_limit: ["number", "select"], charge_current: ["number", "select"],
+  charge_switch: ["switch"], charge_start: ["button"], charge_stop: ["button"], charge_port: ["cover"], charge_cable: ["binary_sensor"],
+  lock: ["lock", "binary_sensor"], sentry: ["switch"], climate: ["climate", "binary_sensor", "switch"], climate_start: ["button"], climate_stop: ["button"],
+  defrost: ["switch"], frunk: ["cover"], trunk: ["cover"], windows: ["cover"], seat_left: ["select"], seat_right: ["select"], wheel_heater: ["select"],
+  location: ["device_tracker"], flash: ["button"], honk: ["button"], wake: ["button"], online: ["binary_sensor"], update: ["update"],
+  something_open: ["binary_sensor"], battery: ["sensor"], range: ["sensor"], charger_power: ["sensor"], energy_added: ["sensor"],
+  time_to_full: ["sensor"], charger_current: ["sensor"], charger_voltage: ["sensor"], inside_temp: ["sensor"], outside_temp: ["sensor"], odometer: ["sensor"],
 };
+const evcDomainOk = (role, id) => { const d = EVC_DOMAINS[role]; return !d || d.includes(id.split(".")[0]); };
+
+// Map roles to entities on one device
+function evcMatch(adapter, onDevice) {
+  const entities = {};
+  Object.keys(EVC_ROLES).forEach(role => {
+    const key = adapter.keys[role];
+    let hit = key && onDevice.find(e => e.translation_key === key && evcDomainOk(role, e.entity_id));
+    const sufs = [].concat(adapter.suffixes[role] || []);
+    for (const s of sufs) {
+      if (hit) break;
+      hit = onDevice.find(e => (!key || !e.translation_key) && e.entity_id.endsWith("_" + s) && evcDomainOk(role, e.entity_id));
+    }
+    if (hit) entities[role] = hit.entity_id;
+  });
+  return entities;
+}
 
 // Find the car and map every role to an entity_id. Returns { adapter, deviceId, entities, devices }.
 function evcResolve(hass, cfg) {
   const adapter = EVC_ADAPTERS[cfg.vehicle] || EVC_ADAPTERS.tesla;
   const reg = Object.values(hass.entities || {});
-  const mine = reg.filter(e => adapter.platforms.includes(e.platform) && e.device_id);
-  const devices = [...new Set(mine.map(e => e.device_id))];
-  // Prefer the configured car, else the first one that reports a battery level
-  let deviceId = cfg.device_id && devices.includes(cfg.device_id) ? cfg.device_id : null;
-  if (!deviceId) {
-    deviceId = devices.find(d => mine.some(e => e.device_id === d && e.translation_key === adapter.keys.battery)) || devices[0] || null;
-  }
-  const onDevice = mine.filter(e => e.device_id === deviceId);
-  const entities = {};
-  Object.keys(EVC_ROLES).forEach(role => {
-    const key = adapter.keys[role];
-    const domain = EVC_DOMAINS[role];
-    let hit = key && onDevice.find(e => e.translation_key === key && (!domain || e.entity_id.startsWith(domain + ".")));
-    if (!hit && adapter.suffixes[role]) {
-      const suf = "_" + adapter.suffixes[role];
-      const byKey = !!key;   // with keys, only untranslated entities fall back to names
-      hit = onDevice.find(e => (!byKey || !e.translation_key) && e.entity_id.endsWith(suf) && (!domain || e.entity_id.startsWith(domain + ".")));
-    }
-    if (hit) entities[role] = hit.entity_id;
-  });
+  const makerOk = d => {
+    if (!adapter.manufacturers) return true;
+    const dev = hass.devices && hass.devices[d];
+    return !dev || adapter.manufacturers.includes(String(dev.manufacturer || "").toLowerCase());
+  };
+  const mine = reg.filter(e => adapter.platforms.includes(e.platform) && e.device_id && makerOk(e.device_id));
+  // A car is a device with a battery level; the best match wins
+  const scored = [...new Set(mine.map(e => e.device_id))].map(d => {
+    const ents = evcMatch(adapter, mine.filter(e => e.device_id === d));
+    return { d, ents, n: Object.keys(ents).length };
+  }).filter(x => x.ents.battery).sort((a, b) => b.n - a.n);
+  const devices = scored.map(x => x.d);
+  const pick = scored.find(x => x.d === cfg.device_id) || scored[0];
+  const entities = pick ? Object.assign({}, pick.ents) : {};
   Object.entries(cfg.entities || {}).forEach(([role, id]) => { if (id) entities[role] = id; });
-  return { adapter, deviceId, entities, devices };
+  return { adapter, deviceId: pick ? pick.d : null, entities, devices };
 }
 
 // ---- 20-energy.js ----
@@ -496,7 +537,7 @@ input[type=range]{width:100%;accent-color:var(--lime)}
 
 // ---- 40-card.js ----
 // ── The card ────────────────────────────────────────────────────
-const EVC_VERSION = "0.1.0";
+const EVC_VERSION = "0.2.0";
 
 const EVC_DEFAULTS = {
   vehicle: "tesla",
@@ -611,7 +652,35 @@ class EvCockpitCard extends HTMLElement {
   _rate(r) { return this._cfg.currency === "£" ? `${+(r * 100).toFixed(1)}p` : `${this._cfg.currency}${r.toFixed(3)}`; }
   _hh(h) { return `${String(h).padStart(2, "0")}:00`; }
 
-  _chargeState() { return (this._st("charging") || "").toLowerCase(); }
+  _chargeState() {
+    const id = this._id("charging");
+    if (id && id.startsWith("binary_sensor.")) {
+      if (this._st("charging") === "on") return "charging";
+      if (this._ok("charge_cable")) return this._st("charge_cable") === "on" ? "stopped" : "disconnected";
+      return "";
+    }
+    return (this._st("charging") || "").toLowerCase();
+  }
+  _canCharge() { return !!(this._id("charge_switch") || this._id("charge_start")); }
+  // A lock entity, or a binary sensor (device_class lock: off = locked, as Home Assistant defines it)
+  _lockCtl() { const id = this._id("lock"); return !!id && id.startsWith("lock."); }
+  _locked() {
+    const v = this._st("lock");
+    if (this._lockCtl()) return v === "locked";
+    return this._attr("lock", "device_class") === "lock" ? v === "off" : v === "on";
+  }
+  _climateOn() { const v = this._st("climate"); return !!v && v !== "off" && v !== "unavailable" && v !== "unknown"; }
+  _climateCtl() { const id = this._id("climate"); return !!id && (id.startsWith("climate.") || id.startsWith("switch.") || !!this._id("climate_start")); }
+  _limitOptions() { const o = this._attr("charge_limit", "options"); return Array.isArray(o) ? o.map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b) : null; }
+  _setLimit(v) {
+    const id = this._id("charge_limit"); if (!id) return;
+    if (id.startsWith("select.")) {
+      const opts = this._limitOptions() || [v], best = opts.reduce((b, o) => Math.abs(o - v) < Math.abs(b - v) ? o : b, opts[0]);
+      const raw = this._attr("charge_limit", "options").find(o => Number(o) === best);
+      return this._call("select", "select_option", "charge_limit", { option: raw }, `Charge limit set to ${best}%`);
+    }
+    return this._call("number", "set_value", "charge_limit", { value: v }, `Charge limit set to ${v}%`);
+  }
   _isCharging() { const c = this._chargeState(); return c === "charging" || c === "starting"; }
   _plugged() {
     if (this._ok("charge_cable")) return this._st("charge_cable") === "on";
@@ -707,9 +776,9 @@ class EvCockpitCard extends HTMLElement {
     const b = this._num("battery"), rg = this._num("range"), lim = this._num("charge_limit"), ch = this._isCharging(), left = this._secondsLeft();
     const st = ch ? "Charging" : this._chargeState() === "complete" ? "Charge complete" : this._plugged() ? "Plugged in" : "Parked";
     const where = this._whereText();
-    const sub = ch ? (left ? `${this._fmt(lim)}% by ${this._clock(left)}` : `Charging to ${this._fmt(lim)}%`) : this._plugged() ? `${where} · limit ${this._fmt(lim)}%` : `${where} · ${this._st("lock") === "locked" ? "locked" : this._ok("lock") ? "unlocked" : ""}`;
+    const sub = ch ? (left ? `${this._fmt(lim)}% by ${this._clock(left)}` : `Charging to ${this._fmt(lim)}%`) : this._plugged() ? `${where} · limit ${this._fmt(lim)}%` : `${where}${this._ok("lock") ? " · " + (this._locked() ? "locked" : "unlocked") : ""}`;
     const C = 2 * Math.PI * 21, frac = (b || 0) / 100;
-    const presets = this._cfg.limit_presets || [];
+    const lo = this._limitOptions(), presets = lo ? (this._cfg.limit_presets || []).filter(p => lo.includes(p)).concat([]).slice(0, 3) : (this._cfg.limit_presets || []);
     const limName = lim == null ? "" : lim <= 80 ? "Daily" : lim < 100 ? "Trip" : "Max";
     return `
       <button class="pill glass pbatt" data-go="charging">
@@ -775,10 +844,10 @@ class EvCockpitCard extends HTMLElement {
               ${stat("Range", "range", 0, "")}${stat("Inside", "inside_temp", 1, "°C")}${stat("Outside", "outside_temp", 1, "°C")}${stat(ch ? "This session" : "Last session", "energy_added", 1, "kWh")}
             </div>
             <button class="well foot hov" data-go="controls">
-              ${evcIc(this._st("lock") === "unlocked" ? "unlock" : "lock", "i")}
-              <div><div>${this._st("lock") === "unlocked" ? "Unlocked" : this._ok("lock") ? "Locked" : "Lock unavailable"}</div>
-                ${this._id("sentry") ? `<div class="${this._st("sentry") === "on" ? "g" : "lbl"}">Sentry mode ${this._st("sentry") === "on" ? "on" : "off"}</div>` : ""}</div>
-              <span class="r">${this._id("climate") ? (this._st("climate") && this._st("climate") !== "off" ? `Climate on · ${this._fmt(this._attr("climate", "temperature"), 1)}°` : "Climate off") : ""}</span>
+              ${evcIc(this._ok("lock") && !this._locked() ? "unlock" : "lock", "i")}
+              <div><div>${!this._ok("lock") ? "Lock unavailable" : this._locked() ? "Locked" : "Unlocked"}</div>
+                ${this._id("sentry") ? `<div class="${this._st("sentry") === "on" ? "g" : "lbl"}">Sentry mode ${this._st("sentry") === "on" ? "on" : "off"}</div>` : this._id("something_open") ? `<div class="${this._st("something_open") === "on" ? "" : "g"}" style="${this._st("something_open") === "on" ? "color:var(--amber)" : ""}">${this._st("something_open") === "on" ? "Something is open" : "All closed"}</div>` : ""}</div>
+              <span class="r">${this._id("climate") ? (this._climateOn() ? `Climate on${this._attr("climate", "temperature") != null ? " · " + this._fmt(this._attr("climate", "temperature"), 1) + "°" : ""}` : "Climate off") : ""}</span>
               ${evcIc("chev", "chev")}
             </button>
           </div>
@@ -818,13 +887,13 @@ class EvCockpitCard extends HTMLElement {
       return `${this._ticks((b || 0) / 100, true)}<div class="in"><div class="cap">Charging to ${this._fmt(lim)}%</div>
         <div class="clock" data-clock>${left ? this._hms(left) : `${this._fmt(b)}<span>%</span>`}</div>
         <div class="tri"><div>${evcIc("bolt")}${this._fmt(kw, 1)} kW<small>Power</small></div><div>${evcIc("plus")}${this._fmt(added, 1)} kWh<small>Added</small></div><div>${evcIc("clock")}${left ? this._clock(left) : "--"}<small>Finish</small></div></div>
-        ${this._id("charge_switch") ? `<button class="go" data-act="charge_off" aria-label="Stop charging"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>` : ""}</div>`;
+        ${(this._id("charge_switch") || this._id("charge_stop")) ? `<button class="go" data-act="charge_off" aria-label="Stop charging"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>` : ""}</div>`;
     }
     const plugged = this._plugged(), cs = this._chargeState();
     const cap = cs === "complete" ? "Charge complete" : plugged ? "Plugged in · not charging" : "Not plugged in";
     const t = this._cfg.tariff, off = EvcModel.inWindow(new Date().getHours(), t.offpeak_start, t.offpeak_end);
     let btn = "";
-    if (plugged && cs !== "complete" && this._id("charge_switch")) btn = `<button class="go" data-act="charge_on">Start charging</button>`;
+    if (plugged && cs !== "complete" && this._canCharge()) btn = `<button class="go" data-act="charge_on">Start charging</button>`;
     else if (!plugged && this._id("charge_port")) btn = this._st("charge_port") === "open" ? `<button class="go ghost" data-act="port_close">Close charge port</button>` : `<button class="go" data-act="port_open">Open charge port</button>`;
     return `${this._ticks((b || 0) / 100, false)}<div class="in"><div class="cap">${cap}</div><div class="clock">${this._fmt(b)}<span>%</span></div>
       <div class="tri"><div>${evcIc("amp")}${this._fmt(amps)} A<small>Current</small></div><div>${evcIc("bolt")}${this._rate(off ? t.offpeak_rate : t.peak_rate)}<small>${off ? "Off-peak now" : "Off-peak " + this._hh(t.offpeak_start)}</small></div><div>${evcIc("lock")}${this._fmt(lim)}%<small>Limit</small></div></div>
@@ -846,7 +915,8 @@ class EvCockpitCard extends HTMLElement {
       const best = this._bestSaving();
       if (best) out.push(warn(best.label, `${this._money(best.save, 0)} / yr`, "energy"));
     }
-    if (out.length < 3 && this._ok("lock")) out.push(this._st("lock") === "locked" ? ok("Doors locked", "Locked", "controls") : warn("Doors unlocked", "Lock now", "controls"));
+    if (out.length < 3 && this._ok("something_open")) out.push(this._st("something_open") === "on" ? warn("Something is open", "Check", "controls") : ok("Doors, windows and boot", "Closed", "controls"));
+    if (out.length < 3 && this._ok("lock")) out.push(this._locked() ? ok("Doors locked", "Locked", "controls") : warn("Doors unlocked", this._lockCtl() ? "Lock now" : "Unlocked", "controls"));
     if (out.length < 3 && this._ok("windows")) out.push(this._st("windows") === "closed" ? ok("Windows closed", "Closed", "controls") : warn("Windows open", "Close", "controls"));
     if (out.length < 3 && this._ok("sentry")) out.push(this._st("sentry") === "on" ? ok("Sentry mode", "On", "controls") : warn("Sentry mode", "Off", "controls"));
     if (out.length < 3 && this._ok("update")) out.push(this._st("update") === "off" ? ok("Software", "Up to date", "controls") : warn("Software update", "Available", "controls"));
@@ -856,7 +926,9 @@ class EvCockpitCard extends HTMLElement {
   // ── Charging page ───────────────────────────────────────────
   _chargingHtml() {
     const lim = this._num("charge_limit"), amps = this._num("charge_current"), t = this._cfg.tariff;
-    const limMin = this._attr("charge_limit", "min") ?? 50, limMax = this._attr("charge_limit", "max") ?? 100;
+    const lo = this._limitOptions();
+    const limMin = lo ? lo[0] : (this._attr("charge_limit", "min") ?? 50), limMax = lo ? lo[lo.length - 1] : (this._attr("charge_limit", "max") ?? 100);
+    const limStep = lo && lo.length > 1 ? lo[1] - lo[0] : (this._attr("charge_limit", "step") || 1);
     const ch = this._isCharging(), plugged = this._plugged(), now = new Date(), off = EvcModel.inWindow(now.getHours(), t.offpeak_start, t.offpeak_end);
     const added = this._num("energy_added"), rate = off ? t.offpeak_rate : t.peak_rate, left = this._secondsLeft();
     const span = t.offpeak_start <= t.offpeak_end
@@ -869,9 +941,9 @@ class EvCockpitCard extends HTMLElement {
         <h4>Charging controls</h4>
         ${this._id("charge_current") ? `<div><div class="lbl" style="margin-bottom:8px">Charge current</div><div class="stepper"><button data-act="amp_down" aria-label="Lower charge current">−</button><span>${this._fmt(amps)} A</span><button data-act="amp_up" aria-label="Raise charge current">+</button></div></div>` : ""}
         ${this._id("charge_limit") ? `<div><div class="lbl" style="margin-bottom:8px;display:flex;justify-content:space-between">Charge limit <b style="font-weight:400;color:var(--ink)" data-limtxt>${this._fmt(lim)}%</b></div>
-          <input type="range" data-range="charge_limit" min="${limMin}" max="${limMax}" step="${this._attr("charge_limit", "step") || 1}" value="${lim ?? 80}" aria-label="Charge limit"></div>` : ""}
+          <input type="range" data-range="charge_limit" min="${limMin}" max="${limMax}" step="${limStep}" value="${lim ?? 80}" aria-label="Charge limit"></div>` : ""}
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          ${this._id("charge_switch") ? `<button class="go" style="flex:1;margin:0" data-act="${ch ? "charge_off" : "charge_on"}" ${!plugged && !ch ? "disabled" : ""}>${ch ? "Stop charging" : "Start charging"}</button>` : ""}
+          ${this._canCharge() ? `<button class="go" style="flex:1;margin:0" data-act="${ch ? "charge_off" : "charge_on"}" ${!plugged && !ch ? "disabled" : ""}>${ch ? "Stop charging" : "Start charging"}</button>` : ""}
           ${this._id("charge_port") ? `<button class="go ghost" style="flex:1;margin:0" data-act="${this._st("charge_port") === "open" ? "port_close" : "port_open"}" ${ch ? "disabled" : ""}>${this._st("charge_port") === "open" ? "Close charge port" : "Open charge port"}</button>` : ""}
         </div>
       </div>
@@ -947,9 +1019,10 @@ class EvCockpitCard extends HTMLElement {
   _controlsHtml() {
     const S = r => this._st(r), on = (r, v = "on") => S(r) === v;
     const T = [
-      ["lock", on("lock", "locked") ? "lock" : "unlock", "Doors", on("lock", "locked") ? "Locked" : "Unlocked", on("lock", "locked"), "lock"],
+      ["lock", this._locked() ? "lock" : "unlock", "Doors", (this._locked() ? "Locked" : "Unlocked") + (this._lockCtl() ? "" : " · read only"), this._locked(), "lock"],
+      ["something_open", "car", "Doors and boot", on("something_open") ? "Something open" : "All closed", !on("something_open"), "noop"],
       ["sentry", "eye", "Sentry mode", on("sentry") ? "On" : "Off", on("sentry"), "sentry"],
-      ["climate", "fan", "Climate", S("climate") && S("climate") !== "off" ? `On · ${this._fmt(this._attr("climate", "temperature"), 1)}°` : "Off", S("climate") && S("climate") !== "off", "climate"],
+      ["climate", "fan", "Climate", this._climateOn() ? `On${this._attr("climate", "temperature") != null ? " · " + this._fmt(this._attr("climate", "temperature"), 1) + "°" : ""}` : "Off", this._climateOn(), "climate"],
       ["defrost", "snow", "Defrost", on("defrost") ? "On" : "Off", on("defrost"), "defrost"],
       ["frunk", "car", "Front trunk", on("frunk", "open") ? "Open" : "Closed", on("frunk", "open"), "frunk"],
       ["trunk", "car", "Boot", on("trunk", "open") ? "Open" : "Closed", on("trunk", "open"), "trunk"],
@@ -960,7 +1033,7 @@ class EvCockpitCard extends HTMLElement {
     ].filter(t => this._id(t[0]));
     const tiles = T.map(([role, i, n, s, active, act]) => {
       const armed = this._arm === act;
-      return `<button class="glass tile hov ${active ? "on" : ""} ${armed ? "arm" : ""}" data-act="${act}" ${this._ok(role) || ["flash", "honk", "wake"].includes(act) ? "" : "disabled"}>${evcIc(i)}<div><div class="tn">${n}</div><div class="ts">${armed ? "Tap again to confirm" : s}</div></div></button>`;
+      return `<button class="glass tile hov ${active ? "on" : ""} ${armed ? "arm" : ""}" data-act="${act}" ${(this._ok(role) || ["flash", "honk", "wake"].includes(act)) && act !== "noop" && !(act === "climate" && !this._climateCtl()) ? "" : "disabled"}>${evcIc(i)}<div><div class="tn">${n}</div><div class="ts">${armed ? "Tap again to confirm" : s}</div></div></button>`;
     }).join("");
     const sel = (role, label) => {
       const opts = this._attr(role, "options");
@@ -971,14 +1044,14 @@ class EvCockpitCard extends HTMLElement {
     const ct = this._attr("climate", "temperature");
     return `<div class="tiles">${tiles}</div>
       <div class="g3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*1.1)">
-        ${this._id("climate") ? `<div class="glass card"><h4>Cabin temperature <span class="lbl">Inside ${this._fmt(this._num("inside_temp"), 1)}° · Outside ${this._fmt(this._num("outside_temp"), 1)}°</span></h4>
+        ${this._id("climate") && this._id("climate").startsWith("climate.") ? `<div class="glass card"><h4>Cabin temperature <span class="lbl">Inside ${this._fmt(this._num("inside_temp"), 1)}° · Outside ${this._fmt(this._num("outside_temp"), 1)}°</span></h4>
           <div class="stepper"><button data-act="temp_down" aria-label="Cooler">−</button><span>${ct == null ? "--" : Number(ct).toFixed(1) + "°"}</span><button data-act="temp_up" aria-label="Warmer">+</button></div></div>` : ""}
         ${this._id("seat_left") || this._id("wheel_heater") ? `<div class="glass card"><h4>Heaters</h4>${sel("seat_left", "Driver seat")}${sel("seat_right", "Passenger seat")}${sel("wheel_heater", "Steering wheel")}</div>` : ""}
         <div class="glass card"><h4>Car</h4><div>
           ${this._id("odometer") ? `<div class="line"><span>Odometer</span><b>${this._fmt(this._num("odometer"))} ${evcEsc(this._unit("odometer"))}</b></div>` : ""}
           ${this._id("update") ? `<div class="line"><span>Software</span><b>${S("update") === "on" ? "Update available" : "Up to date"}</b></div>` : ""}
           ${this._id("online") ? `<div class="line"><span>Connection</span><b>${S("online") === "on" ? "Online" : "Asleep"}</b></div>` : ""}
-        </div>${this._id("wake") ? `<button class="go ghost" style="margin:0" data-act="wake">Wake car</button>` : ""}</div>
+        </div>${this._id("wake") ? `<button class="go ghost" style="margin:0" data-act="wake">${this._resolved.adapter.wakeLabel || "Wake car"}</button>` : ""}</div>
       </div>`;
   }
 
@@ -1168,7 +1241,7 @@ class EvCockpitCard extends HTMLElement {
     if (!t || t.disabled) return;
     if (t.dataset.go) { this._view = t.dataset.go; this._arm = null; this._renderDynamic(); return; }
     if (t.hasAttribute("data-peek")) { this._peek = !this._peek; this._applyFullscreen(); this._renderAll(); return; }
-    if (t.dataset.limit) { this._call("number", "set_value", "charge_limit", { value: +t.dataset.limit }, `Charge limit set to ${t.dataset.limit}%`); return; }
+    if (t.dataset.limit) { this._setLimit(+t.dataset.limit); return; }
     if (t.dataset.ui) { const k = t.dataset.ui, v = t.dataset.v; this._ui[k] = k === "inv" ? +v : v; this._renderDynamic(); return; }
     if (t.dataset.device) { this._deviceOverride = t.dataset.device; this._resolved = evcResolve(this._hass, Object.assign({}, this._cfg, { device_id: t.dataset.device })); this._mapEl = null; this._renderAll(); return; }
     if (t.dataset.select) { this._call("select", "select_option", t.dataset.select, { option: t.dataset.v }); return; }
@@ -1177,8 +1250,8 @@ class EvCockpitCard extends HTMLElement {
     const S = r => this._st(r);
     const step = r => this._attr(r, "step") || 1;
     switch (a) {
-      case "charge_on": return this._call("switch", "turn_on", "charge_switch", {}, "Charging started");
-      case "charge_off": return this._call("switch", "turn_off", "charge_switch", {}, "Charging stopped");
+      case "charge_on": return this._id("charge_switch") ? this._call("switch", "turn_on", "charge_switch", {}, "Charging started") : this._call("button", "press", "charge_start", {}, "Asked the car to start charging");
+      case "charge_off": return this._id("charge_switch") ? this._call("switch", "turn_off", "charge_switch", {}, "Charging stopped") : this._call("button", "press", "charge_stop", {}, "Asked the car to stop charging");
       case "port_open": return this._call("cover", "open_cover", "charge_port", {}, "Charge port opening");
       case "port_close": return this._call("cover", "close_cover", "charge_port", {}, "Charge port closing");
       case "port": return S("charge_port") === "open" ? this._call("cover", "close_cover", "charge_port", {}, "Charge port closing") : this._call("cover", "open_cover", "charge_port", {}, "Charge port opening");
@@ -1192,23 +1265,28 @@ class EvCockpitCard extends HTMLElement {
         const st = this._attr("climate", "target_temp_step") || 0.5;
         return this._call("climate", "set_temperature", "climate", { temperature: cur + (a === "temp_up" ? st : -st) });
       }
-      case "lock": if (S("lock") === "locked") { if (!this._confirm(a)) return; return this._call("lock", "unlock", "lock", {}, "Unlocking"); } return this._call("lock", "lock", "lock", {}, "Locking");
+      case "lock": if (!this._lockCtl()) return this._toast("This car's lock can only be read, not changed, from Home Assistant");
+        if (this._locked()) { if (!this._confirm(a)) return; return this._call("lock", "unlock", "lock", {}, "Unlocking"); } return this._call("lock", "lock", "lock", {}, "Locking");
       case "sentry": return this._call("switch", S("sentry") === "on" ? "turn_off" : "turn_on", "sentry");
       case "defrost": return this._call("switch", S("defrost") === "on" ? "turn_off" : "turn_on", "defrost");
-      case "climate": return this._call("climate", S("climate") && S("climate") !== "off" ? "turn_off" : "turn_on", "climate");
+      case "climate": {
+        const id = this._id("climate"), on = this._climateOn();
+        if (id.startsWith("climate.")) return this._call("climate", on ? "turn_off" : "turn_on", "climate");
+        if (id.startsWith("switch.")) return this._call("switch", on ? "turn_off" : "turn_on", "climate");
+        return this._call("button", "press", on ? "climate_stop" : "climate_start", {}, on ? "Asked the car to stop climate" : "Asked the car to start climate");
+      }
       case "frunk": if (S("frunk") === "open") return this._toast("Close the front trunk by hand"); if (!this._confirm(a)) return; return this._call("cover", "open_cover", "frunk", {}, "Opening the front trunk");
       case "trunk": if (!this._confirm(a)) return; return this._call("cover", S("trunk") === "open" ? "close_cover" : "open_cover", "trunk", {}, S("trunk") === "open" ? "Closing the boot" : "Opening the boot");
       case "windows": return this._call("cover", S("windows") === "open" ? "close_cover" : "open_cover", "windows", {}, S("windows") === "open" ? "Closing windows" : "Venting windows");
       case "flash": return this._call("button", "press", "flash", {}, "Flashing lights");
       case "honk": if (!this._confirm(a)) return; return this._call("button", "press", "honk", {}, "Honking");
-      case "wake": return this._call("button", "press", "wake", {}, "Waking the car");
+      case "wake": return this._call("button", "press", "wake", {}, this._resolved.adapter.wakeLabel ? "Syncing with the car" : "Waking the car");
     }
   }
   _onChange(e) {
     const r = e.target.dataset && e.target.dataset.range;
     if (!r) return;
-    const v = +e.target.value;
-    this._call("number", "set_value", r, { value: v }, `Charge limit set to ${v}%`);
+    this._setLimit(+e.target.value);
   }
 }
 

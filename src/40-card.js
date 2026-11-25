@@ -114,7 +114,35 @@ class EvCockpitCard extends HTMLElement {
   _rate(r) { return this._cfg.currency === "£" ? `${+(r * 100).toFixed(1)}p` : `${this._cfg.currency}${r.toFixed(3)}`; }
   _hh(h) { return `${String(h).padStart(2, "0")}:00`; }
 
-  _chargeState() { return (this._st("charging") || "").toLowerCase(); }
+  _chargeState() {
+    const id = this._id("charging");
+    if (id && id.startsWith("binary_sensor.")) {
+      if (this._st("charging") === "on") return "charging";
+      if (this._ok("charge_cable")) return this._st("charge_cable") === "on" ? "stopped" : "disconnected";
+      return "";
+    }
+    return (this._st("charging") || "").toLowerCase();
+  }
+  _canCharge() { return !!(this._id("charge_switch") || this._id("charge_start")); }
+  // A lock entity, or a binary sensor (device_class lock: off = locked, as Home Assistant defines it)
+  _lockCtl() { const id = this._id("lock"); return !!id && id.startsWith("lock."); }
+  _locked() {
+    const v = this._st("lock");
+    if (this._lockCtl()) return v === "locked";
+    return this._attr("lock", "device_class") === "lock" ? v === "off" : v === "on";
+  }
+  _climateOn() { const v = this._st("climate"); return !!v && v !== "off" && v !== "unavailable" && v !== "unknown"; }
+  _climateCtl() { const id = this._id("climate"); return !!id && (id.startsWith("climate.") || id.startsWith("switch.") || !!this._id("climate_start")); }
+  _limitOptions() { const o = this._attr("charge_limit", "options"); return Array.isArray(o) ? o.map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b) : null; }
+  _setLimit(v) {
+    const id = this._id("charge_limit"); if (!id) return;
+    if (id.startsWith("select.")) {
+      const opts = this._limitOptions() || [v], best = opts.reduce((b, o) => Math.abs(o - v) < Math.abs(b - v) ? o : b, opts[0]);
+      const raw = this._attr("charge_limit", "options").find(o => Number(o) === best);
+      return this._call("select", "select_option", "charge_limit", { option: raw }, `Charge limit set to ${best}%`);
+    }
+    return this._call("number", "set_value", "charge_limit", { value: v }, `Charge limit set to ${v}%`);
+  }
   _isCharging() { const c = this._chargeState(); return c === "charging" || c === "starting"; }
   _plugged() {
     if (this._ok("charge_cable")) return this._st("charge_cable") === "on";
@@ -210,9 +238,9 @@ class EvCockpitCard extends HTMLElement {
     const b = this._num("battery"), rg = this._num("range"), lim = this._num("charge_limit"), ch = this._isCharging(), left = this._secondsLeft();
     const st = ch ? "Charging" : this._chargeState() === "complete" ? "Charge complete" : this._plugged() ? "Plugged in" : "Parked";
     const where = this._whereText();
-    const sub = ch ? (left ? `${this._fmt(lim)}% by ${this._clock(left)}` : `Charging to ${this._fmt(lim)}%`) : this._plugged() ? `${where} · limit ${this._fmt(lim)}%` : `${where} · ${this._st("lock") === "locked" ? "locked" : this._ok("lock") ? "unlocked" : ""}`;
+    const sub = ch ? (left ? `${this._fmt(lim)}% by ${this._clock(left)}` : `Charging to ${this._fmt(lim)}%`) : this._plugged() ? `${where} · limit ${this._fmt(lim)}%` : `${where}${this._ok("lock") ? " · " + (this._locked() ? "locked" : "unlocked") : ""}`;
     const C = 2 * Math.PI * 21, frac = (b || 0) / 100;
-    const presets = this._cfg.limit_presets || [];
+    const lo = this._limitOptions(), presets = lo ? (this._cfg.limit_presets || []).filter(p => lo.includes(p)).concat([]).slice(0, 3) : (this._cfg.limit_presets || []);
     const limName = lim == null ? "" : lim <= 80 ? "Daily" : lim < 100 ? "Trip" : "Max";
     return `
       <button class="pill glass pbatt" data-go="charging">
@@ -278,10 +306,10 @@ class EvCockpitCard extends HTMLElement {
               ${stat("Range", "range", 0, "")}${stat("Inside", "inside_temp", 1, "°C")}${stat("Outside", "outside_temp", 1, "°C")}${stat(ch ? "This session" : "Last session", "energy_added", 1, "kWh")}
             </div>
             <button class="well foot hov" data-go="controls">
-              ${evcIc(this._st("lock") === "unlocked" ? "unlock" : "lock", "i")}
-              <div><div>${this._st("lock") === "unlocked" ? "Unlocked" : this._ok("lock") ? "Locked" : "Lock unavailable"}</div>
-                ${this._id("sentry") ? `<div class="${this._st("sentry") === "on" ? "g" : "lbl"}">Sentry mode ${this._st("sentry") === "on" ? "on" : "off"}</div>` : ""}</div>
-              <span class="r">${this._id("climate") ? (this._st("climate") && this._st("climate") !== "off" ? `Climate on · ${this._fmt(this._attr("climate", "temperature"), 1)}°` : "Climate off") : ""}</span>
+              ${evcIc(this._ok("lock") && !this._locked() ? "unlock" : "lock", "i")}
+              <div><div>${!this._ok("lock") ? "Lock unavailable" : this._locked() ? "Locked" : "Unlocked"}</div>
+                ${this._id("sentry") ? `<div class="${this._st("sentry") === "on" ? "g" : "lbl"}">Sentry mode ${this._st("sentry") === "on" ? "on" : "off"}</div>` : this._id("something_open") ? `<div class="${this._st("something_open") === "on" ? "" : "g"}" style="${this._st("something_open") === "on" ? "color:var(--amber)" : ""}">${this._st("something_open") === "on" ? "Something is open" : "All closed"}</div>` : ""}</div>
+              <span class="r">${this._id("climate") ? (this._climateOn() ? `Climate on${this._attr("climate", "temperature") != null ? " · " + this._fmt(this._attr("climate", "temperature"), 1) + "°" : ""}` : "Climate off") : ""}</span>
               ${evcIc("chev", "chev")}
             </button>
           </div>
@@ -321,13 +349,13 @@ class EvCockpitCard extends HTMLElement {
       return `${this._ticks((b || 0) / 100, true)}<div class="in"><div class="cap">Charging to ${this._fmt(lim)}%</div>
         <div class="clock" data-clock>${left ? this._hms(left) : `${this._fmt(b)}<span>%</span>`}</div>
         <div class="tri"><div>${evcIc("bolt")}${this._fmt(kw, 1)} kW<small>Power</small></div><div>${evcIc("plus")}${this._fmt(added, 1)} kWh<small>Added</small></div><div>${evcIc("clock")}${left ? this._clock(left) : "--"}<small>Finish</small></div></div>
-        ${this._id("charge_switch") ? `<button class="go" data-act="charge_off" aria-label="Stop charging"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>` : ""}</div>`;
+        ${(this._id("charge_switch") || this._id("charge_stop")) ? `<button class="go" data-act="charge_off" aria-label="Stop charging"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>` : ""}</div>`;
     }
     const plugged = this._plugged(), cs = this._chargeState();
     const cap = cs === "complete" ? "Charge complete" : plugged ? "Plugged in · not charging" : "Not plugged in";
     const t = this._cfg.tariff, off = EvcModel.inWindow(new Date().getHours(), t.offpeak_start, t.offpeak_end);
     let btn = "";
-    if (plugged && cs !== "complete" && this._id("charge_switch")) btn = `<button class="go" data-act="charge_on">Start charging</button>`;
+    if (plugged && cs !== "complete" && this._canCharge()) btn = `<button class="go" data-act="charge_on">Start charging</button>`;
     else if (!plugged && this._id("charge_port")) btn = this._st("charge_port") === "open" ? `<button class="go ghost" data-act="port_close">Close charge port</button>` : `<button class="go" data-act="port_open">Open charge port</button>`;
     return `${this._ticks((b || 0) / 100, false)}<div class="in"><div class="cap">${cap}</div><div class="clock">${this._fmt(b)}<span>%</span></div>
       <div class="tri"><div>${evcIc("amp")}${this._fmt(amps)} A<small>Current</small></div><div>${evcIc("bolt")}${this._rate(off ? t.offpeak_rate : t.peak_rate)}<small>${off ? "Off-peak now" : "Off-peak " + this._hh(t.offpeak_start)}</small></div><div>${evcIc("lock")}${this._fmt(lim)}%<small>Limit</small></div></div>
@@ -349,7 +377,8 @@ class EvCockpitCard extends HTMLElement {
       const best = this._bestSaving();
       if (best) out.push(warn(best.label, `${this._money(best.save, 0)} / yr`, "energy"));
     }
-    if (out.length < 3 && this._ok("lock")) out.push(this._st("lock") === "locked" ? ok("Doors locked", "Locked", "controls") : warn("Doors unlocked", "Lock now", "controls"));
+    if (out.length < 3 && this._ok("something_open")) out.push(this._st("something_open") === "on" ? warn("Something is open", "Check", "controls") : ok("Doors, windows and boot", "Closed", "controls"));
+    if (out.length < 3 && this._ok("lock")) out.push(this._locked() ? ok("Doors locked", "Locked", "controls") : warn("Doors unlocked", this._lockCtl() ? "Lock now" : "Unlocked", "controls"));
     if (out.length < 3 && this._ok("windows")) out.push(this._st("windows") === "closed" ? ok("Windows closed", "Closed", "controls") : warn("Windows open", "Close", "controls"));
     if (out.length < 3 && this._ok("sentry")) out.push(this._st("sentry") === "on" ? ok("Sentry mode", "On", "controls") : warn("Sentry mode", "Off", "controls"));
     if (out.length < 3 && this._ok("update")) out.push(this._st("update") === "off" ? ok("Software", "Up to date", "controls") : warn("Software update", "Available", "controls"));
@@ -359,7 +388,9 @@ class EvCockpitCard extends HTMLElement {
   // ── Charging page ───────────────────────────────────────────
   _chargingHtml() {
     const lim = this._num("charge_limit"), amps = this._num("charge_current"), t = this._cfg.tariff;
-    const limMin = this._attr("charge_limit", "min") ?? 50, limMax = this._attr("charge_limit", "max") ?? 100;
+    const lo = this._limitOptions();
+    const limMin = lo ? lo[0] : (this._attr("charge_limit", "min") ?? 50), limMax = lo ? lo[lo.length - 1] : (this._attr("charge_limit", "max") ?? 100);
+    const limStep = lo && lo.length > 1 ? lo[1] - lo[0] : (this._attr("charge_limit", "step") || 1);
     const ch = this._isCharging(), plugged = this._plugged(), now = new Date(), off = EvcModel.inWindow(now.getHours(), t.offpeak_start, t.offpeak_end);
     const added = this._num("energy_added"), rate = off ? t.offpeak_rate : t.peak_rate, left = this._secondsLeft();
     const span = t.offpeak_start <= t.offpeak_end
@@ -372,9 +403,9 @@ class EvCockpitCard extends HTMLElement {
         <h4>Charging controls</h4>
         ${this._id("charge_current") ? `<div><div class="lbl" style="margin-bottom:8px">Charge current</div><div class="stepper"><button data-act="amp_down" aria-label="Lower charge current">−</button><span>${this._fmt(amps)} A</span><button data-act="amp_up" aria-label="Raise charge current">+</button></div></div>` : ""}
         ${this._id("charge_limit") ? `<div><div class="lbl" style="margin-bottom:8px;display:flex;justify-content:space-between">Charge limit <b style="font-weight:400;color:var(--ink)" data-limtxt>${this._fmt(lim)}%</b></div>
-          <input type="range" data-range="charge_limit" min="${limMin}" max="${limMax}" step="${this._attr("charge_limit", "step") || 1}" value="${lim ?? 80}" aria-label="Charge limit"></div>` : ""}
+          <input type="range" data-range="charge_limit" min="${limMin}" max="${limMax}" step="${limStep}" value="${lim ?? 80}" aria-label="Charge limit"></div>` : ""}
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          ${this._id("charge_switch") ? `<button class="go" style="flex:1;margin:0" data-act="${ch ? "charge_off" : "charge_on"}" ${!plugged && !ch ? "disabled" : ""}>${ch ? "Stop charging" : "Start charging"}</button>` : ""}
+          ${this._canCharge() ? `<button class="go" style="flex:1;margin:0" data-act="${ch ? "charge_off" : "charge_on"}" ${!plugged && !ch ? "disabled" : ""}>${ch ? "Stop charging" : "Start charging"}</button>` : ""}
           ${this._id("charge_port") ? `<button class="go ghost" style="flex:1;margin:0" data-act="${this._st("charge_port") === "open" ? "port_close" : "port_open"}" ${ch ? "disabled" : ""}>${this._st("charge_port") === "open" ? "Close charge port" : "Open charge port"}</button>` : ""}
         </div>
       </div>
@@ -450,9 +481,10 @@ class EvCockpitCard extends HTMLElement {
   _controlsHtml() {
     const S = r => this._st(r), on = (r, v = "on") => S(r) === v;
     const T = [
-      ["lock", on("lock", "locked") ? "lock" : "unlock", "Doors", on("lock", "locked") ? "Locked" : "Unlocked", on("lock", "locked"), "lock"],
+      ["lock", this._locked() ? "lock" : "unlock", "Doors", (this._locked() ? "Locked" : "Unlocked") + (this._lockCtl() ? "" : " · read only"), this._locked(), "lock"],
+      ["something_open", "car", "Doors and boot", on("something_open") ? "Something open" : "All closed", !on("something_open"), "noop"],
       ["sentry", "eye", "Sentry mode", on("sentry") ? "On" : "Off", on("sentry"), "sentry"],
-      ["climate", "fan", "Climate", S("climate") && S("climate") !== "off" ? `On · ${this._fmt(this._attr("climate", "temperature"), 1)}°` : "Off", S("climate") && S("climate") !== "off", "climate"],
+      ["climate", "fan", "Climate", this._climateOn() ? `On${this._attr("climate", "temperature") != null ? " · " + this._fmt(this._attr("climate", "temperature"), 1) + "°" : ""}` : "Off", this._climateOn(), "climate"],
       ["defrost", "snow", "Defrost", on("defrost") ? "On" : "Off", on("defrost"), "defrost"],
       ["frunk", "car", "Front trunk", on("frunk", "open") ? "Open" : "Closed", on("frunk", "open"), "frunk"],
       ["trunk", "car", "Boot", on("trunk", "open") ? "Open" : "Closed", on("trunk", "open"), "trunk"],
@@ -463,7 +495,7 @@ class EvCockpitCard extends HTMLElement {
     ].filter(t => this._id(t[0]));
     const tiles = T.map(([role, i, n, s, active, act]) => {
       const armed = this._arm === act;
-      return `<button class="glass tile hov ${active ? "on" : ""} ${armed ? "arm" : ""}" data-act="${act}" ${this._ok(role) || ["flash", "honk", "wake"].includes(act) ? "" : "disabled"}>${evcIc(i)}<div><div class="tn">${n}</div><div class="ts">${armed ? "Tap again to confirm" : s}</div></div></button>`;
+      return `<button class="glass tile hov ${active ? "on" : ""} ${armed ? "arm" : ""}" data-act="${act}" ${(this._ok(role) || ["flash", "honk", "wake"].includes(act)) && act !== "noop" && !(act === "climate" && !this._climateCtl()) ? "" : "disabled"}>${evcIc(i)}<div><div class="tn">${n}</div><div class="ts">${armed ? "Tap again to confirm" : s}</div></div></button>`;
     }).join("");
     const sel = (role, label) => {
       const opts = this._attr(role, "options");
@@ -474,14 +506,14 @@ class EvCockpitCard extends HTMLElement {
     const ct = this._attr("climate", "temperature");
     return `<div class="tiles">${tiles}</div>
       <div class="g3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--u)*1.1)">
-        ${this._id("climate") ? `<div class="glass card"><h4>Cabin temperature <span class="lbl">Inside ${this._fmt(this._num("inside_temp"), 1)}° · Outside ${this._fmt(this._num("outside_temp"), 1)}°</span></h4>
+        ${this._id("climate") && this._id("climate").startsWith("climate.") ? `<div class="glass card"><h4>Cabin temperature <span class="lbl">Inside ${this._fmt(this._num("inside_temp"), 1)}° · Outside ${this._fmt(this._num("outside_temp"), 1)}°</span></h4>
           <div class="stepper"><button data-act="temp_down" aria-label="Cooler">−</button><span>${ct == null ? "--" : Number(ct).toFixed(1) + "°"}</span><button data-act="temp_up" aria-label="Warmer">+</button></div></div>` : ""}
         ${this._id("seat_left") || this._id("wheel_heater") ? `<div class="glass card"><h4>Heaters</h4>${sel("seat_left", "Driver seat")}${sel("seat_right", "Passenger seat")}${sel("wheel_heater", "Steering wheel")}</div>` : ""}
         <div class="glass card"><h4>Car</h4><div>
           ${this._id("odometer") ? `<div class="line"><span>Odometer</span><b>${this._fmt(this._num("odometer"))} ${evcEsc(this._unit("odometer"))}</b></div>` : ""}
           ${this._id("update") ? `<div class="line"><span>Software</span><b>${S("update") === "on" ? "Update available" : "Up to date"}</b></div>` : ""}
           ${this._id("online") ? `<div class="line"><span>Connection</span><b>${S("online") === "on" ? "Online" : "Asleep"}</b></div>` : ""}
-        </div>${this._id("wake") ? `<button class="go ghost" style="margin:0" data-act="wake">Wake car</button>` : ""}</div>
+        </div>${this._id("wake") ? `<button class="go ghost" style="margin:0" data-act="wake">${this._resolved.adapter.wakeLabel || "Wake car"}</button>` : ""}</div>
       </div>`;
   }
 
@@ -671,7 +703,7 @@ class EvCockpitCard extends HTMLElement {
     if (!t || t.disabled) return;
     if (t.dataset.go) { this._view = t.dataset.go; this._arm = null; this._renderDynamic(); return; }
     if (t.hasAttribute("data-peek")) { this._peek = !this._peek; this._applyFullscreen(); this._renderAll(); return; }
-    if (t.dataset.limit) { this._call("number", "set_value", "charge_limit", { value: +t.dataset.limit }, `Charge limit set to ${t.dataset.limit}%`); return; }
+    if (t.dataset.limit) { this._setLimit(+t.dataset.limit); return; }
     if (t.dataset.ui) { const k = t.dataset.ui, v = t.dataset.v; this._ui[k] = k === "inv" ? +v : v; this._renderDynamic(); return; }
     if (t.dataset.device) { this._deviceOverride = t.dataset.device; this._resolved = evcResolve(this._hass, Object.assign({}, this._cfg, { device_id: t.dataset.device })); this._mapEl = null; this._renderAll(); return; }
     if (t.dataset.select) { this._call("select", "select_option", t.dataset.select, { option: t.dataset.v }); return; }
@@ -680,8 +712,8 @@ class EvCockpitCard extends HTMLElement {
     const S = r => this._st(r);
     const step = r => this._attr(r, "step") || 1;
     switch (a) {
-      case "charge_on": return this._call("switch", "turn_on", "charge_switch", {}, "Charging started");
-      case "charge_off": return this._call("switch", "turn_off", "charge_switch", {}, "Charging stopped");
+      case "charge_on": return this._id("charge_switch") ? this._call("switch", "turn_on", "charge_switch", {}, "Charging started") : this._call("button", "press", "charge_start", {}, "Asked the car to start charging");
+      case "charge_off": return this._id("charge_switch") ? this._call("switch", "turn_off", "charge_switch", {}, "Charging stopped") : this._call("button", "press", "charge_stop", {}, "Asked the car to stop charging");
       case "port_open": return this._call("cover", "open_cover", "charge_port", {}, "Charge port opening");
       case "port_close": return this._call("cover", "close_cover", "charge_port", {}, "Charge port closing");
       case "port": return S("charge_port") === "open" ? this._call("cover", "close_cover", "charge_port", {}, "Charge port closing") : this._call("cover", "open_cover", "charge_port", {}, "Charge port opening");
@@ -695,22 +727,27 @@ class EvCockpitCard extends HTMLElement {
         const st = this._attr("climate", "target_temp_step") || 0.5;
         return this._call("climate", "set_temperature", "climate", { temperature: cur + (a === "temp_up" ? st : -st) });
       }
-      case "lock": if (S("lock") === "locked") { if (!this._confirm(a)) return; return this._call("lock", "unlock", "lock", {}, "Unlocking"); } return this._call("lock", "lock", "lock", {}, "Locking");
+      case "lock": if (!this._lockCtl()) return this._toast("This car's lock can only be read, not changed, from Home Assistant");
+        if (this._locked()) { if (!this._confirm(a)) return; return this._call("lock", "unlock", "lock", {}, "Unlocking"); } return this._call("lock", "lock", "lock", {}, "Locking");
       case "sentry": return this._call("switch", S("sentry") === "on" ? "turn_off" : "turn_on", "sentry");
       case "defrost": return this._call("switch", S("defrost") === "on" ? "turn_off" : "turn_on", "defrost");
-      case "climate": return this._call("climate", S("climate") && S("climate") !== "off" ? "turn_off" : "turn_on", "climate");
+      case "climate": {
+        const id = this._id("climate"), on = this._climateOn();
+        if (id.startsWith("climate.")) return this._call("climate", on ? "turn_off" : "turn_on", "climate");
+        if (id.startsWith("switch.")) return this._call("switch", on ? "turn_off" : "turn_on", "climate");
+        return this._call("button", "press", on ? "climate_stop" : "climate_start", {}, on ? "Asked the car to stop climate" : "Asked the car to start climate");
+      }
       case "frunk": if (S("frunk") === "open") return this._toast("Close the front trunk by hand"); if (!this._confirm(a)) return; return this._call("cover", "open_cover", "frunk", {}, "Opening the front trunk");
       case "trunk": if (!this._confirm(a)) return; return this._call("cover", S("trunk") === "open" ? "close_cover" : "open_cover", "trunk", {}, S("trunk") === "open" ? "Closing the boot" : "Opening the boot");
       case "windows": return this._call("cover", S("windows") === "open" ? "close_cover" : "open_cover", "windows", {}, S("windows") === "open" ? "Closing windows" : "Venting windows");
       case "flash": return this._call("button", "press", "flash", {}, "Flashing lights");
       case "honk": if (!this._confirm(a)) return; return this._call("button", "press", "honk", {}, "Honking");
-      case "wake": return this._call("button", "press", "wake", {}, "Waking the car");
+      case "wake": return this._call("button", "press", "wake", {}, this._resolved.adapter.wakeLabel ? "Syncing with the car" : "Waking the car");
     }
   }
   _onChange(e) {
     const r = e.target.dataset && e.target.dataset.range;
     if (!r) return;
-    const v = +e.target.value;
-    this._call("number", "set_value", r, { value: v }, `Charge limit set to ${v}%`);
+    this._setLimit(+e.target.value);
   }
 }

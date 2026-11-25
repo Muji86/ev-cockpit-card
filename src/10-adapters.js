@@ -40,6 +40,11 @@ const EVC_ROLES = {
   online: "Online (binary sensor)",
   update: "Software update",
   odometer: "Odometer",
+  charge_start: "Start charging (button)",
+  charge_stop: "Stop charging (button)",
+  climate_start: "Start climate (button)",
+  climate_stop: "Stop climate (button)",
+  something_open: "Something open (binary sensor)",
 };
 
 const EVC_ADAPTERS = {
@@ -97,21 +102,41 @@ const EVC_ADAPTERS = {
     sceneCar: { w: 1310, h: 490, cx: 640, roof: 72, tyres: 440 },
     model: "Tesla",
   },
-  // Volkswagen ID. family (ID.3, ID.4, ID.5, ID.7, ID. Buzz) through the community
-  // "Volkswagen We Connect ID" integration (volkswagen_we_connect_id) or "Volkswagen Car-Net"
-  // (volkswagencarnet). Neither sets translation keys, so entities are matched on their
-  // English entity_id endings. Not yet checked against a real car: report gaps in an issue.
+  // Volkswagen ID. family (ID.3, ID.4, ID.5, ID.7, ID. Buzz). Works with:
+  //  - an MQTT bridge that publishes the car as a "Volkswagen" device with German entity names
+  //    (sensor.<car>_soc, select.<car>_ladelimit, button.<car>_laden_stoppen…), checked against a real ID.4;
+  //  - the community "Volkswagen We Connect ID" and "Volkswagen Car-Net" integrations (English names; not yet
+  //    checked against a real car).
+  // None of these set translation keys, so entities are matched on the end of their entity_id.
   volkswagen: {
     name: "Volkswagen ID.",
-    platforms: ["volkswagen_we_connect_id", "volkswagencarnet"],
+    platforms: ["volkswagen_we_connect_id", "volkswagencarnet", "mqtt"],
+    manufacturers: ["volkswagen", "vw"],   // MQTT devices must be a Volkswagen
     keys: {},
     suffixes: {
-      battery: "state_of_charge", range: "range", charging: "charging_state", charger_power: "charge_power",
-      time_to_full: "remaining_charging_time", charge_limit: "target_state_of_charge", charge_current: "max_charge_current_ac",
-      charge_switch: "charging", charge_cable: "plug_connection_state", lock: "door_lock",
-      climate: "climatisation", inside_temp: "inside_temperature", outside_temp: "outside_temperature",
-      location: "position", odometer: "odometer", windows: "window_heating", online: "online",
+      battery: ["state_of_charge", "soc"],
+      range: ["range", "reichweite"],
+      charging: ["charging_state", "charging"],
+      charger_power: ["charge_power", "ladeleistung"],
+      time_to_full: ["remaining_charging_time", "restladezeit"],
+      charge_limit: ["target_state_of_charge", "ladelimit"],
+      charge_current: ["max_charge_current_ac"],
+      charge_switch: ["charging"],
+      charge_start: ["start_charging", "laden_starten", "laden_fortsetzen"],
+      charge_stop: ["stop_charging", "laden_stoppen"],
+      charge_cable: ["plug_connection_state", "charger", "kabel"],
+      lock: ["door_lock", "verriegelt"],
+      climate: ["climatisation", "klimatisierung"],
+      climate_start: ["start_climate", "klimatisierung_starten"],
+      climate_stop: ["stop_climate", "klimatisierung_stoppen"],
+      inside_temp: ["inside_temperature"],
+      outside_temp: ["outside_temperature"],
+      location: ["position"],
+      odometer: ["odometer", "kilometerstand"],
+      wake: ["fahrzeug_synchronisieren", "refresh_data"],
+      something_open: ["something_open", "doors_open"],
     },
+    wakeLabel: "Sync with car",
     images: { scene: "volkswagen/scene", side: "volkswagen/side", xray: "volkswagen/xray" },
     sceneCar: { w: 1310, h: 490, cx: 640, roof: 65, tyres: 445 },
     model: "Volkswagen ID.",
@@ -127,37 +152,53 @@ const EVC_ADAPTERS = {
   },
 };
 
+// Which entity types each role may be. Read-only alternatives (a lock or climate reported only by a
+// binary sensor) are allowed; the card then shows the state and uses buttons where the car has them.
 const EVC_DOMAINS = {
-  charge_limit: "number", charge_current: "number", charge_switch: "switch", charge_port: "cover", charge_cable: "binary_sensor",
-  lock: "lock", sentry: "switch", climate: "climate", defrost: "switch", frunk: "cover", trunk: "cover", windows: "cover",
-  seat_left: "select", seat_right: "select", wheel_heater: "select", location: "device_tracker", flash: "button",
-  honk: "button", wake: "button", online: "binary_sensor", update: "update",
+  charging: ["sensor", "binary_sensor"], charge_limit: ["number", "select"], charge_current: ["number", "select"],
+  charge_switch: ["switch"], charge_start: ["button"], charge_stop: ["button"], charge_port: ["cover"], charge_cable: ["binary_sensor"],
+  lock: ["lock", "binary_sensor"], sentry: ["switch"], climate: ["climate", "binary_sensor", "switch"], climate_start: ["button"], climate_stop: ["button"],
+  defrost: ["switch"], frunk: ["cover"], trunk: ["cover"], windows: ["cover"], seat_left: ["select"], seat_right: ["select"], wheel_heater: ["select"],
+  location: ["device_tracker"], flash: ["button"], honk: ["button"], wake: ["button"], online: ["binary_sensor"], update: ["update"],
+  something_open: ["binary_sensor"], battery: ["sensor"], range: ["sensor"], charger_power: ["sensor"], energy_added: ["sensor"],
+  time_to_full: ["sensor"], charger_current: ["sensor"], charger_voltage: ["sensor"], inside_temp: ["sensor"], outside_temp: ["sensor"], odometer: ["sensor"],
 };
+const evcDomainOk = (role, id) => { const d = EVC_DOMAINS[role]; return !d || d.includes(id.split(".")[0]); };
+
+// Map roles to entities on one device
+function evcMatch(adapter, onDevice) {
+  const entities = {};
+  Object.keys(EVC_ROLES).forEach(role => {
+    const key = adapter.keys[role];
+    let hit = key && onDevice.find(e => e.translation_key === key && evcDomainOk(role, e.entity_id));
+    const sufs = [].concat(adapter.suffixes[role] || []);
+    for (const s of sufs) {
+      if (hit) break;
+      hit = onDevice.find(e => (!key || !e.translation_key) && e.entity_id.endsWith("_" + s) && evcDomainOk(role, e.entity_id));
+    }
+    if (hit) entities[role] = hit.entity_id;
+  });
+  return entities;
+}
 
 // Find the car and map every role to an entity_id. Returns { adapter, deviceId, entities, devices }.
 function evcResolve(hass, cfg) {
   const adapter = EVC_ADAPTERS[cfg.vehicle] || EVC_ADAPTERS.tesla;
   const reg = Object.values(hass.entities || {});
-  const mine = reg.filter(e => adapter.platforms.includes(e.platform) && e.device_id);
-  const devices = [...new Set(mine.map(e => e.device_id))];
-  // Prefer the configured car, else the first one that reports a battery level
-  let deviceId = cfg.device_id && devices.includes(cfg.device_id) ? cfg.device_id : null;
-  if (!deviceId) {
-    deviceId = devices.find(d => mine.some(e => e.device_id === d && e.translation_key === adapter.keys.battery)) || devices[0] || null;
-  }
-  const onDevice = mine.filter(e => e.device_id === deviceId);
-  const entities = {};
-  Object.keys(EVC_ROLES).forEach(role => {
-    const key = adapter.keys[role];
-    const domain = EVC_DOMAINS[role];
-    let hit = key && onDevice.find(e => e.translation_key === key && (!domain || e.entity_id.startsWith(domain + ".")));
-    if (!hit && adapter.suffixes[role]) {
-      const suf = "_" + adapter.suffixes[role];
-      const byKey = !!key;   // with keys, only untranslated entities fall back to names
-      hit = onDevice.find(e => (!byKey || !e.translation_key) && e.entity_id.endsWith(suf) && (!domain || e.entity_id.startsWith(domain + ".")));
-    }
-    if (hit) entities[role] = hit.entity_id;
-  });
+  const makerOk = d => {
+    if (!adapter.manufacturers) return true;
+    const dev = hass.devices && hass.devices[d];
+    return !dev || adapter.manufacturers.includes(String(dev.manufacturer || "").toLowerCase());
+  };
+  const mine = reg.filter(e => adapter.platforms.includes(e.platform) && e.device_id && makerOk(e.device_id));
+  // A car is a device with a battery level; the best match wins
+  const scored = [...new Set(mine.map(e => e.device_id))].map(d => {
+    const ents = evcMatch(adapter, mine.filter(e => e.device_id === d));
+    return { d, ents, n: Object.keys(ents).length };
+  }).filter(x => x.ents.battery).sort((a, b) => b.n - a.n);
+  const devices = scored.map(x => x.d);
+  const pick = scored.find(x => x.d === cfg.device_id) || scored[0];
+  const entities = pick ? Object.assign({}, pick.ents) : {};
   Object.entries(cfg.entities || {}).forEach(([role, id]) => { if (id) entities[role] = id; });
-  return { adapter, deviceId, entities, devices };
+  return { adapter, deviceId: pick ? pick.d : null, entities, devices };
 }
