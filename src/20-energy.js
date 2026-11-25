@@ -38,16 +38,17 @@ const EvcModel = {
     return r;
   },
 
-  // Hourly car charging from a battery-level statistic: each rise in the hourly mean,
-  // converted to kWh from the wall. rows: [{ start, mean }] sorted by start.
+  // Hourly car charging from a battery-level statistic: each rise in the hour's highest level
+  // (the hourly mean lags by half an hour), converted to kWh from the wall. rows: [{ start, max?, mean }] by start.
   socToKwh(rows, batteryKwh, efficiency) {
     const out = {};
     let prev = null;
     rows.forEach(r => {
-      if (r.mean == null) return;
-      const d = prev == null ? 0 : r.mean - prev;
+      const v = r.max != null ? r.max : r.mean;
+      if (v == null) return;
+      const d = prev == null ? 0 : v - prev;
       out[r.start] = d > 0 ? (d / 100) * batteryKwh / (efficiency || 0.9) : 0;
-      prev = r.mean;
+      prev = v;
     });
     return out;
   },
@@ -116,7 +117,7 @@ async function evcLoadEnergy(hass, cfg) {
   const ids = [e.car_statistic, e.home_statistic, e.cost_statistic].filter(Boolean);
   const res = await hass.callWS({
     type: "recorder/statistics_during_period", start_time: new Date(start.getTime() - 3600e3).toISOString(), end_time: now.toISOString(),
-    statistic_ids: ids, period: "hour", types: src === "energy" ? ["change"] : ["change", "mean"], units: { energy: "kWh", power: "kW" },
+    statistic_ids: ids, period: "hour", types: src === "energy" ? ["change"] : ["change", "mean", "max"], units: { energy: "kWh", power: "kW" },
   });
   const windowOff = h => EvcModel.inWindow(h, t.offpeak_start, t.offpeak_end);
   const months = {};
@@ -140,9 +141,10 @@ async function evcLoadEnergy(hass, cfg) {
     const p = parts(new Date(Number(st))), m = months[p.key];
     const realOff = EvcModel.offFromCost(h.cost, h.meter, t);
     const isOff = realOff == null ? windowOff(p.hour) : realOff, b = isOff ? "off" : "peak";
-    if (m && h.car) m.car[b] += h.car;
+    // Battery level or power can't tell home from a public charger: only hours the house meter saw count
+    if (m && h.car) m.car[b] += src === "energy" ? h.car : (h.meter == null ? 0 : Math.min(h.car, h.meter));
     const u = usage[p.day] || (usage[p.day] = { car: { off: 0, peak: 0 }, home: { off: 0, peak: 0 }, meter: 0 });
-    u.car[b] += h.meter == null ? (h.car || 0) : Math.min(h.car || 0, h.meter);
+    u.car[b] += h.meter == null ? (src === "energy" ? (h.car || 0) : 0) : Math.min(h.car || 0, h.meter);
     if (h.meter == null) return;
     u.meter++;
     const car = Math.min(h.car || 0, h.meter);   // the car can't use more than the meter recorded

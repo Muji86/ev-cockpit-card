@@ -77,6 +77,10 @@ const soc = [56, 56, 59, 62, 65, 68, 71, 74, 77, 80, 80, 79].map((mean, i) => ({
 const kwh = M.socToKwh(soc, 77, 0.9), total = Object.values(kwh).reduce((a, b) => a + b, 0);
 assert.ok(Math.abs(total - 0.24 * 77 / 0.9) < 0.01, "SoC rise turns into wall kWh");
 assert.equal(kwh[11 * 3600e3], 0, "a falling battery level is not charging");
+// The hour's highest level tracks the rise without the half-hour lag of the mean (20–21 Nov, a real ID.4)
+const night = [[75, 75], [75.66, 76], [78.34, 79], [79.53, 80], [75.9, 80]].map(([mean, max], i) => ({ start: i * 3600e3, mean, max }));
+const byMax = M.socToKwh(night, 77, 0.9);
+assert.ok(Math.abs(byMax[1 * 3600e3] - 0.01 * 77 / 0.9) < 0.01 && Math.abs(byMax[2 * 3600e3] - 0.03 * 77 / 0.9) < 0.01, "rise counted in the hour it happened");
 
 // Real off-peak hours from the hourly cost: 6.66p and 36.46p, and the standing-charge hour is ignored
 const edf = { offpeak_rate: 0.0666, peak_rate: 0.3646 };
