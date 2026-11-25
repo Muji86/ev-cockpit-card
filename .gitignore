@@ -1,0 +1,5 @@
+node_modules/
+dev/s/
+dev/shots/
+.DS_Store
+src/images/*/source.*

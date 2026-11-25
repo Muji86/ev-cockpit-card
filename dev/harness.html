@@ -1,0 +1,80 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EV Cockpit test page</title>
+<style>html,body{margin:0;background:#111;height:100%}</style></head>
+<body>
+<!-- Local test page: a mock Home Assistant feeding the built card. ?view=charging&state=charging -->
+<script src="../dist/ev-cockpit-card.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const charging = q.get("state") === "charging";
+const T = window.__evcTestKeys = {
+  "sensor.car_battery_level": ["charge_state_battery_level", "79", { unit_of_measurement: "%" }],
+  "sensor.car_battery_range": ["charge_state_battery_range", "238", { unit_of_measurement: "mi" }],
+  "sensor.car_charging": ["charge_state_charging_state", charging ? "charging" : "disconnected", {}],
+  "sensor.car_charger_power": ["charge_state_charger_power", charging ? "3.7" : "0", { unit_of_measurement: "kW" }],
+  "sensor.car_charge_energy_added": ["charge_state_charge_energy_added", "29.8", { unit_of_measurement: "kWh" }],
+  "sensor.car_time_to_full_charge": ["charge_state_minutes_to_full_charge", charging ? new Date(Date.now() + 8040e3).toISOString() : "unavailable", {}],
+  "number.car_charge_limit": ["charge_state_charge_limit_soc", "90", { min: 50, max: 100, step: 1, unit_of_measurement: "%" }],
+  "number.car_charge_current": ["charge_state_charge_current_request", "16", { min: 0, max: 32, step: 1 }],
+  "switch.car_charge": ["charge_state_user_charge_enable_request", charging ? "on" : "off", {}],
+  "cover.car_charge_port_door": ["charge_state_charge_port_door_open", charging ? "open" : "closed", {}],
+  "binary_sensor.car_charge_cable": ["charge_state_conn_charge_cable", charging ? "on" : "off", {}],
+  "lock.car_lock": ["vehicle_state_locked", "locked", {}],
+  "switch.car_sentry_mode": ["vehicle_state_sentry_mode", "on", {}],
+  "climate.car_climate": ["driver_temp", "off", { temperature: 21, target_temp_step: 0.5 }],
+  "switch.car_defrost": ["climate_state_defrost_mode", "off", {}],
+  "sensor.car_inside_temperature": ["climate_state_inside_temp", "10.6", { unit_of_measurement: "°C" }],
+  "sensor.car_outside_temperature": ["climate_state_outside_temp", "7.5", { unit_of_measurement: "°C" }],
+  "cover.car_frunk": ["vehicle_state_ft", "closed", {}],
+  "cover.car_boot": ["vehicle_state_rt", "closed", {}],
+  "cover.car_windows": ["windows", "closed", {}],
+  "select.car_seat_heater_front_left": ["climate_state_seat_heater_left", "off", { options: ["off", "low", "medium", "high"] }],
+  "select.car_seat_heater_front_right": ["climate_state_seat_heater_right", "off", { options: ["off", "low", "medium", "high"] }],
+  "select.car_steering_wheel_heater": ["climate_state_steering_wheel_heat_level", "off", { options: ["off", "low", "high"] }],
+  "device_tracker.car_location": ["location", charging ? "home" : "not_home", { latitude: 51.52, longitude: -0.10, heading: 120 }],
+  "button.car_flash_lights": ["flash_lights", "unknown", {}],
+  "button.car_honk_horn": ["honk", "unknown", {}],
+  "button.car_wake": ["wake", "unknown", {}],
+  "binary_sensor.car_status": ["state", "on", {}],
+  "update.car_update": ["vehicle_state_software_update_status", "off", {}],
+};
+const states = {}, entities = {};
+const now = new Date().toISOString();
+for (const [id, [tk, st, at]] of Object.entries(T)) {
+  states[id] = { entity_id: id, state: st, attributes: at, last_changed: new Date(Date.now() - 6e6).toISOString(), last_updated: now };
+  entities[id] = { entity_id: id, platform: "tesla_fleet", translation_key: tk, device_id: "car1" };
+}
+states["zone.home"] = { entity_id: "zone.home", state: "0", attributes: { latitude: 51.50, longitude: -0.12, friendly_name: "Home" } };
+// Fake hourly statistics: car charges overnight most days, house uses a little all day
+function stats(ids) {
+  const out = {}; ids.forEach(i => out[i] = []);
+  const end = Date.now(), start = new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1).getTime();
+  for (let t = start; t < end; t += 3600e3) {
+    const d = new Date(t), h = d.getHours(), day = Math.floor(t / 864e5);
+    const charges = (day * 7) % 10 < 6;
+    const car = charges && h < 5 ? 7 : (charges && h === 18 && day % 3 === 0 ? 3 : 0);
+    const house = 0.3 + (h >= 7 && h <= 22 ? 0.5 : 0) + (h === 18 ? 1.2 : 0);
+    if (ids[0]) out[ids[0]].push({ start: t, change: car });
+    if (ids[1]) out[ids[1]].push({ start: t, change: car + house });
+  }
+  return out;
+}
+const hass = {
+  states, entities, devices: { car1: { id: "car1", name: "My car", model: "Model Y" } },
+  config: { time_zone: "Europe/London", unit_system: { length: "mi" } },
+  callService: (d, s, data) => { console.log("SERVICE", d, s, JSON.stringify(data)); return Promise.resolve(); },
+  callWS: msg => Promise.resolve(stats(msg.statistic_ids)),
+};
+const card = document.createElement("ev-cockpit-card");
+card.setConfig({
+  type: "custom:ev-cockpit-card", vehicle: "tesla", fullscreen: true,
+  energy: { car_statistic: "sensor.car_home_charging", home_statistic: "meter:electricity" },
+  compare: { name: "EDF overnight", offpeak_rate: 0.066, peak_rate: 0.36, offpeak_start: 23, offpeak_end: 6, standing_charge: 0.4705 },
+  home_battery: { name: "Fogstar 16 kWh", kwh: 16, usable: 0.95, efficiency: 0.9, cost: 5000, inverter_options: [6, 8] },
+  ev_charger_kw: 7,
+});
+document.body.appendChild(card);
+card.hass = hass;
+if (q.get("view")) setTimeout(() => { card.shadowRoot.querySelector(`[data-go="${q.get("view")}"]`).click(); }, 300);
+</script>
+</body></html>

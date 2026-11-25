@@ -1,0 +1,13 @@
+{
+  "name": "ev-cockpit-card",
+  "version": "0.1.0",
+  "description": "Full-screen Home Assistant cockpit card for electric cars: charging, controls, location and energy costs.",
+  "repo": "Muji86/ev-cockpit-card",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs && node --check dist/ev-cockpit-card.js && node scripts/test.mjs"
+  }
+}
