@@ -15,15 +15,16 @@ const EVC_DEFAULTS = {
   entities: {},
 };
 
-// Fogstar 16.1 kWh 48V battery + inverter bundles (fogstar.co.uk, prices Nov 2026). The battery's 200 A BMS
-// gives about 10 kW, so a bigger inverter doesn't make one battery discharge faster. Off-grid inverters are left out:
-// they can't run a grid-tied house on a time-of-use tariff.
-const EVC_FOGSTAR = [
-  { name: "Fogstar 16.1 kWh + 3.6–6 kW hybrid", kwh: 16.1, inverter_kw: 6, max_kw: 10, price: 2625.99 },
-  { name: "Fogstar 16.1 kWh + 7–12 kW hybrid", kwh: 16.1, inverter_kw: 12, max_kw: 10, price: 3165.99 },
-  { name: "Fogstar 16.1 kWh + 14 kW hybrid", kwh: 16.1, inverter_kw: 14, max_kw: 10, price: 3853.99 },
-  { name: "Fogstar 16.1 kWh + 20 kW three-phase hybrid", kwh: 16.1, inverter_kw: 20, max_kw: 10, price: 4147.99, three_phase: true },
-];
+// Fogstar 16.1 kWh 48V battery + inverter bundles (fogstar.co.uk, prices Nov 2026): the GEN3 3.6–6K hybrid at 6 kW,
+// or the GEN PRO 7–12K hybrid set to 8 kW. A second 16.1 kWh battery on its own is £1,719.99. Each battery's 200 A BMS
+// gives about 10 kW, so with these inverters the inverter sets the power.
+const EVC_FOGSTAR = {
+  kwh: 16.1, max_kw: 10, extra_battery_price: 1719.99,
+  inverters: [
+    { kw: 6, name: "GEN3 3.6–6K hybrid", price: 2625.99 },
+    { kw: 8, name: "GEN PRO 7–12K hybrid at 8 kW", price: 3165.99 },
+  ],
+};
 
 const EVC_ICON = {
   home: '<path d="M3 11 12 4l9 7M5 10v10h14V10"/>', bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', nav: '<path d="m4 11 16-7-7 16-2-7z"/>',
@@ -594,8 +595,11 @@ class EvCockpitCard extends HTMLElement {
     const hb = this._cfg.home_battery;
     if (!hb) return [];
     const legacy = !hb.options && hb.kwh && hb.preset !== "fogstar";   // the older single battery: { kwh, cost, inverter_options }
+    const F = EVC_FOGSTAR, invs = F.inverters.filter(v => !hb.inverters || hb.inverters.includes(v.kw));
+    // Fogstar: every battery size (1 or 2 batteries by default) with every inverter
     const list = hb.options || (legacy ? (hb.inverter_options || [6]).map(k => ({ name: `${hb.name || hb.kwh + " kWh battery"}, ${k} kW inverter`, kwh: hb.kwh, inverter_kw: k, price: hb.cost || 0 }))
-      : EVC_FOGSTAR.filter(o => !o.three_phase || hb.three_phase));
+      : (hb.batteries || [1, 2]).flatMap(n => invs.map(v => ({ name: `${+(F.kwh * n).toFixed(1)} kWh Fogstar, ${v.kw} kW inverter`, kwh: +(F.kwh * n).toFixed(1), packs: n,
+        inverter_kw: v.kw, max_kw: F.max_kw * n, price: +(v.price + (n - 1) * (hb.extra_battery_price ?? F.extra_battery_price)).toFixed(2) }))));
     const install = hb.install_cost ?? (legacy ? 0 : 2500), share = hb.usable ?? 0.95, eff = hb.efficiency ?? 0.9;
     return list.map((o, i) => {
       const kw = Math.min(o.inverter_kw || 6, o.max_kw || Infinity), usable = o.kwh * (o.usable ?? share);
@@ -603,6 +607,13 @@ class EvCockpitCard extends HTMLElement {
     });
   }
   _battOption() { const o = this._battOptions(); return o.length ? (o[this._ui.inv] || o[0]) : null; }
+  // Battery size and inverter pickers; each tap picks the option with that size and the current inverter (or the reverse)
+  _battPickers(opts) {
+    const cur = this._battOption(), sizes = [...new Set(opts.map(o => o.kwh))], invs = [...new Set(opts.map(o => o.inverter_kw))];
+    const pick = (kwh, kw) => (opts.find(o => o.kwh === kwh && o.inverter_kw === kw) || opts.find(o => o.kwh === kwh) || opts[0]).i;
+    const seg = (vals, label, on, to) => vals.length > 1 ? `<span class="seg">${vals.map(v => `<button data-ui="inv" data-v="${to(v)}" class="${v === on ? "on" : ""}">${label(v)}</button>`).join("")}</span>` : "";
+    return `<div style="display:flex;gap:8px;flex-wrap:wrap">${seg(sizes, v => `${Math.round(v)} kWh`, cur.kwh, v => pick(v, cur.inverter_kw))}${seg(invs, v => `${v} kW`, cur.inverter_kw, v => pick(cur.kwh, v))}</div>`;
+  }
 
   // The tariff the battery would sit on: the one compared with, or today's
   _battTariff() { const sc = this._scenarios(); return (sc.cmp || sc.today).tariff; }
@@ -671,7 +682,7 @@ class EvCockpitCard extends HTMLElement {
           <div class="glass card"><h4>Monthly home charging <span class="lbl">Tap a bar for the numbers</span></h4><div class="chart" id="months"></div></div>
         </div>
         <div class="glass card"><h4>What if you switched? <span style="display:flex;gap:8px;flex-wrap:wrap">${opts.length && y ? seg("side", [["cost", "Costs"], ["batt", "Battery"]]) : ""}${this._ui.side === "batt" && opts.length && y ? "" : seg("per", [["year", "Year"], ["month", "Month"]])}</span></h4>
-          ${opts.length > 1 ? `<div class="seg wrap">${opts.map(o => `<button data-ui="inv" data-v="${o.i}" class="${o.i === this._ui.inv ? "on" : ""}">${o.inverter_kw} kW · ${this._money(o.total, 0)}</button>`).join("")}</div>` : ""}
+          ${opts.length > 1 ? this._battPickers(opts) : ""}
           ${this._ui.side === "batt" && opts.length && y ? this._shortfallHtml() : what}</div>
       </div>`;
   }
@@ -684,10 +695,10 @@ class EvCockpitCard extends HTMLElement {
     const line = (a, b) => `<div class="line"><span>${a}</span><b>${b}</b></div>`, kwh = v => `${v.toFixed(1)} kWh`;
     const grid = (f.gridEmpty + f.gridPower) / n, perYear = (f.gridEmpty + f.gridPower) / n * 365 * t.peak;
     const day = k => new Date(k + "T12:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-    const packs = f.peak90 ? Math.max(1, Math.ceil(f.peak90 / (opt.usable / (opt.kwh / 16.1)) - 0.02)) : 1;
+    const packs = f.peak90 ? Math.max(1, Math.ceil(f.peak90 / (opt.usable / (opt.packs || opt.kwh / 16.1)) - 0.02)) : 1;
     const rows = opts.map(o => {
       const g = EvcModel.shortfall(E.days, t, o.model);
-      return `<tr class="${o.i === opt.i ? "on" : ""}"><td>${o.inverter_kw} kW${o.kw < o.inverter_kw ? ` <small>(${o.kw} kW)</small>` : ""}</td><td>${pct(g.covered)}%</td><td>${((g.gridEmpty + g.gridPower) / n).toFixed(1)}</td><td>${this._money(o.total, 0)}</td></tr>`;
+      return `<tr class="${o.i === opt.i ? "on" : ""}"><td>${Math.round(o.kwh)} kWh · ${o.inverter_kw} kW${o.kw < o.inverter_kw ? ` <small>(${o.kw} kW)</small>` : ""}</td><td>${pct(g.covered)}%</td><td>${((g.gridEmpty + g.gridPower) / n).toFixed(1)}</td><td>${this._money(o.total, 0)}</td></tr>`;
     }).join("");
     return `<div class="lbl">${opt.kwh} kWh battery, ${opt.usable.toFixed(1)} kWh usable · ${opt.kw} kW from the battery${opt.kw < opt.inverter_kw ? ` (the battery's limit, below the ${opt.inverter_kw} kW inverter)` : ""} · on ${this._cfg.compare && this._scenarios().cmp ? evcEsc(this._cfg.compare.name || "the new tariff") : "your tariff"}</div>
       <div>
@@ -701,9 +712,9 @@ class EvCockpitCard extends HTMLElement {
         ${f.worst && f.worst.grid > 0.05 ? line(`Worst day · ${day(f.worst.key)}`, `${kwh(f.worst.peak)} at peak, ${kwh(f.worst.grid)} from the grid`) : ""}
         ${line("Busiest peak hour", `${f.maxHour.toFixed(1)} kWh`)}
       </div>
-      <div class="lbl">${f.peak90 > opt.usable ? `To cover 9 days in 10 you'd need about ${kwh(f.peak90)} usable${Math.abs(opt.kwh - 16.1) < 0.05 ? `: ${packs} battery pack${packs === 1 ? "" : "s"}` : ""}.` : "This battery holds enough for 9 days in 10."}
+      <div class="lbl">${f.peak90 > opt.usable ? `To cover 9 days in 10 you'd need about ${kwh(f.peak90)} usable${opt.packs ? `: ${packs} battery pack${packs === 1 ? "" : "s"}` : ""}.` : "This battery holds enough for 9 days in 10."}
         Readings are hourly, so short spikes above ${opt.kw} kW (an oven and kettle together) also draw a little from the grid.</div>
-      ${opts.length > 1 ? `<table class="cmp"><tr><th>Inverter</th><th>Days covered</th><th>Grid kWh/day</th><th>Installed</th></tr>${rows}</table>` : ""}
+      ${opts.length > 1 ? `<table class="cmp"><tr><th>Battery</th><th>Days covered</th><th>Grid kWh/day</th><th>Installed</th></tr>${rows}</table>` : ""}
       <div class="lbl">Based on ${n} day${n === 1 ? "" : "s"} of your real usage.</div>`;
   }
 

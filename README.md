@@ -109,9 +109,10 @@ home_battery:               # optional: home batteries to compare
 ev_charger_kw: 7            # optional: a faster home charger to compare
 ```
 
-The Fogstar preset compares the 16.1 kWh battery with the 3.6–6 kW, 7–12 kW and 14 kW single-phase hybrid
-inverters (add `three_phase: true` for the 20 kW three-phase one), at their November 2026 prices. One battery
-gives about 10 kW, however big the inverter. To compare your own choices, list them:
+The Fogstar preset compares one or two 16.1 kWh batteries (16 or 32 kWh) with a 6 kW inverter (the GEN3 3.6–6K)
+or an 8 kW one (the GEN PRO 7–12K), at their November 2026 prices: the 16.1 kWh bundles are £2,625.99 and £3,165.99,
+and a second battery is £1,719.99. Pick the size and inverter on the card. `batteries: [1, 2]`, `inverters: [6, 8]` and
+`extra_battery_price` change the choices. To compare your own choices, list them:
 
 ```yaml
 home_battery:
