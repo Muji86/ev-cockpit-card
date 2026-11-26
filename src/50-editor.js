@@ -42,6 +42,7 @@ class EvCockpitCardEditor extends HTMLElement {
         { name: "measured_statistic", label: "Measured charging total, kWh (optional, replaces the estimate)", selector: { statistic: {} } },
         { name: "home_statistic", label: "Whole-house electricity meter (optional)", selector: { statistic: {} } },
         { name: "months", label: "Months of history", selector: { number: { min: 2, max: 24, mode: "box" } } },
+        { name: "start_date", label: "Leave out readings before (optional, e.g. a tariff change)", selector: { date: {} } },
       ] },
       { name: "compare", type: "expandable", title: "Tariff to compare with (optional)", schema: [
         { name: "name", label: "Tariff name", selector: { text: {} } },

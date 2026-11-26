@@ -235,6 +235,7 @@ async function evcLoadEnergy(hass, cfg) {
   const usage = {}, days = {}, counts = {};
   Object.entries(hours).forEach(([st, h]) => {
     const p = parts(new Date(Number(st))), m = months[p.key];
+    if (e.start_date && p.day < e.start_date) return;   // readings before this date (another tariff, a one-off) are left out
     const realOff = EvcModel.offFromCost(h.cost, h.meter, t);
     const isOff = realOff == null ? windowOff(p.hour) : realOff, b = isOff ? "off" : "peak";
     // Battery level or power can't tell home from a public charger: only hours the house meter saw count

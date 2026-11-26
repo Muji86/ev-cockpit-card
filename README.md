@@ -151,6 +151,9 @@ Each rise in battery level becomes the energy drawn from the wall, capped at wha
 recorded that hour, so charging away from home isn't counted. `power` treats each hour's average charging
 power as that hour's kWh; only use it if the sensor drops to 0 when charging stops.
 
+**Leave out old readings.** Set `energy.start_date: 2026-11-20` to ignore everything before that day, for example
+days on a different tariff or a one-off that would skew the averages.
+
 **Smart tariffs** (Octopus Intelligent, EDF GoElectric with Smart Charge and similar) add cheap slots outside
 the usual off-peak hours. Set `energy.cost_statistic` to your supplier's hourly cost statistic (the Octopus
 Energy integration makes one for Octopus and EDF) and the card prices every hour at the rate you actually paid.
