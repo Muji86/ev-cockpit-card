@@ -224,7 +224,7 @@ async function evcLoadEnergy(hass, cfg) {
       const firstSeen = states.length ? (states[0].lu || states[0].last_updated_ts || 0) * 1000 : Date.now();
       const from = Math.floor(Math.min(firstSeen, ...(times.length ? times : [firstSeen])) / 3600e3) * 3600e3;
       Object.keys(hours).forEach(st => { if (+st >= from) { hours[st].car = 0; hours[st].exact = true; } });
-      times.forEach(t => { const h = hourOf(t); h.car = slots[t]; h.exact = true; });
+      times.forEach(t => { const h = hourOf(t); h.car = slots[t]; h.exact = true; h.slot = slots[t]; });
     } catch (err) { /* history unavailable: keep the other sources */ }
   }
   if (e.cost_statistic) (res[e.cost_statistic] || []).forEach(r => { (hours[r.start] || (hours[r.start] = { car: null, meter: null })).cost = r.change; });
@@ -236,7 +236,8 @@ async function evcLoadEnergy(hass, cfg) {
   Object.entries(hours).forEach(([st, h]) => {
     const p = parts(new Date(Number(st))), m = months[p.key];
     if (e.start_date && p.day < e.start_date) return;   // readings before this date (another tariff, a one-off) are left out
-    const realOff = EvcModel.offFromCost(h.cost, h.meter, t);
+    // The real price paid decides; until the supplier sends it, a smart-charging slot (billed off-peak) counts as off-peak
+    const costOff = EvcModel.offFromCost(h.cost, h.meter, t), realOff = costOff != null ? costOff : (h.slot > 0.1 ? true : null);
     const isOff = realOff == null ? windowOff(p.hour) : realOff, b = isOff ? "off" : "peak";
     // Battery level or power can't tell home from a public charger: only hours the house meter saw count
     if (m && h.car) m.car[b] += trusted(h) && h.meter == null ? h.car : (h.meter == null ? 0 : Math.min(h.car, h.meter));

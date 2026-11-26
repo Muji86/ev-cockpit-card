@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 const root = new URL("..", import.meta.url).pathname;
 const ctx = {};
 new Function("ctx", readFileSync(root + "src/10-adapters.js", "utf8") + readFileSync(root + "src/20-energy.js", "utf8") +
-  "\nctx.evcResolve=evcResolve;ctx.EvcModel=EvcModel;ctx.EVC_ADAPTERS=EVC_ADAPTERS;")(ctx);
+  "\nctx.evcResolve=evcResolve;ctx.EvcModel=EvcModel;ctx.EVC_ADAPTERS=EVC_ADAPTERS;ctx.evcLoadEnergy=evcLoadEnergy;")(ctx);
 
 // Tesla Fleet car named "My car": matched on translation keys
 const reg = {}, add = (id, platform, tk, dev = "car1") => { reg[id] = { entity_id: id, platform, translation_key: tk, device_id: dev }; };
@@ -120,5 +120,20 @@ assert.equal(sf.n, 2); assert.equal(sf.covered, 1); assert.equal(sf.emptyDays, 1
 // A short off-peak window can't fill a big battery through a small inverter
 const short = M.dayCost(busy, { ...tf, e: 1 }, { usable: 15, eff: 0.9, kw: 3 }, null);
 assert.ok(short.battUsed <= 3 * 0.9 + 1e-9, "only what one off-peak hour can charge");
+
+// A Flextras slot at 06:00 (after the 23:00–06:00 window) before the supplier has sent the meter and cost: off-peak
+{
+  const day = new Date(); day.setHours(0, 0, 0, 0); day.setDate(day.getDate() - 1);
+  const at = h => new Date(day.getTime() + h * 3600e3), iso = h => at(h).toISOString();
+  const hass = { config: { time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone }, states: {}, callWS: async m => m.type === "history/history_during_period"
+    ? { "binary_sensor.slots": [{ lu: at(-30).getTime() / 1000, a: { completed_dispatches: [
+        { start: iso(5), charge_in_kwh: -1.2 }, { start: iso(5.5), charge_in_kwh: -1.2 }, { start: iso(6), charge_in_kwh: -1.1 }, { start: iso(6.5), charge_in_kwh: -1.15 }] } }] }
+    : { "sensor.soc": [] } };
+  const cfg = { tariff: { offpeak_rate: 0.0666, peak_rate: 0.3646, offpeak_start: 23, offpeak_end: 6 },
+    energy: { car_source: "soc", car_statistic: "sensor.soc", dispatch_entity: "binary_sensor.slots", months: 2 } };
+  const E = await ctx.evcLoadEnergy(hass, cfg);
+  const k = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+  assert.ok(Math.abs(E.usage[k].car.off - 4.65) < 1e-9 && E.usage[k].car.peak === 0, "the 06:00 slot is off-peak");
+}
 
 console.log("All checks passed");
