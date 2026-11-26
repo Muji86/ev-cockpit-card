@@ -141,6 +141,18 @@ button.pill:hover,.hov:hover{border-color:var(--edge2);background:rgba(44,56,70,
 .kpi small{display:block;font-size:calc(var(--u)*.75);color:var(--t3);margin-top:4px}
 .chart{flex:1;min-height:calc(var(--u)*8)}
 .chart svg{width:100%;height:100%}
+.chart{position:relative}
+.chart .tip{position:absolute;pointer-events:none;z-index:3;display:flex;flex-direction:column;gap:2px;padding:7px 10px;border-radius:9px;background:rgba(8,12,16,.92);border:1px solid var(--edge2);font-size:12px;color:var(--t2);white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.chart .tip[hidden]{display:none}
+.chart .tip b{font-weight:500;color:var(--ink)}
+.chart .tip i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px}
+.seg.wrap{flex-wrap:wrap;align-self:flex-start}
+table.cmp{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.74);color:var(--t2)}
+table.cmp th{font-weight:400;color:var(--t3);text-align:right;padding:4px 0 4px 8px}
+table.cmp td{text-align:right;padding:5px 0 5px 8px;border-top:1px solid var(--edge)}
+table.cmp th:first-child,table.cmp td:first-child{text-align:left;padding-left:0}
+table.cmp tr.on td{color:var(--ink)}
+table.cmp small{color:var(--t3)}
 .key{display:flex;gap:16px;font-size:calc(var(--u)*.72);color:var(--t2);flex-wrap:wrap}
 .key i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
 .opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:calc(var(--u)*.5) 0;border-top:1px solid var(--edge)}

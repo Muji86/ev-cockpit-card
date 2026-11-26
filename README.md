@@ -101,15 +101,37 @@ compare:                    # optional: a tariff to compare with
   peak_rate: 0.36
   offpeak_start: 23
   offpeak_end: 6
-home_battery:               # optional: a home battery to compare
-  name: 16 kWh battery
-  kwh: 16
-  usable: 0.95
-  efficiency: 0.9
-  cost: 5000
-  inverter_options: [6, 8]
+home_battery:               # optional: home batteries to compare
+  preset: fogstar           # Fogstar 16.1 kWh + inverter bundles (the default when no kwh is given)
+  install_cost: 2500        # added to each kit's price (default 2500 for the Fogstar bundles)
+  usable: 0.95              # share of the capacity the inverter lets you use
+  efficiency: 0.9           # round trip
 ev_charger_kw: 7            # optional: a faster home charger to compare
 ```
+
+The Fogstar preset compares the 16.1 kWh battery with the 3.6–6 kW, 7–12 kW and 14 kW single-phase hybrid
+inverters (add `three_phase: true` for the 20 kW three-phase one), at their November 2026 prices. One battery
+gives about 10 kW, however big the inverter. To compare your own choices, list them:
+
+```yaml
+home_battery:
+  install_cost: 2500
+  options:
+    - { name: 16 kWh + 6 kW, kwh: 16.1, inverter_kw: 6, max_kw: 10, price: 2625.99 }
+    - { name: 32 kWh + 12 kW, kwh: 32.2, inverter_kw: 12, max_kw: 20, price: 5500 }
+```
+
+The older form (`kwh`, `cost` for the installed price and `inverter_options`) still works.
+
+**What if you switched?** has two views. **Costs** shows each option's yearly bill and how long the
+battery takes to pay back its kit and installation. **Battery** goes through your real days with the chosen
+battery: on how many days it covers the whole peak, when it usually runs out, and how much still comes from the
+grid at peak. That grid energy is split into what's used after the battery runs out, what's above the inverter's power, and car
+charging at peak (the battery runs the house, not the car). It also says how much usable storage would cover 9 days in 10,
+and compares every inverter option. The battery charges in the off-peak hours as fast as the inverter allows
+and tops up in any cheap daytime slot.
+
+Tap any bar in the charts to see its numbers.
 
 **No kWh counter for the car?** The card can work out home charging from the car's battery level
 or its charging power instead:

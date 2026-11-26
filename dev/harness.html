@@ -93,7 +93,7 @@ card.setConfig({
   type: "custom:ev-cockpit-card", vehicle: isVW ? "volkswagen" : "tesla", fullscreen: q.get("fs") !== "0",
   energy: { car_statistic: "sensor.car_home_charging", home_statistic: "meter:electricity" },
   compare: { name: "EDF overnight", offpeak_rate: 0.066, peak_rate: 0.36, offpeak_start: 23, offpeak_end: 6, standing_charge: 0.4705 },
-  home_battery: { name: "Fogstar 16 kWh", kwh: 16, usable: 0.95, efficiency: 0.9, cost: 5000, inverter_options: [6, 8] },
+  home_battery: q.get("batt") === "old" ? { name: "Fogstar 16 kWh", kwh: 16, usable: 0.95, efficiency: 0.9, cost: 5000, inverter_options: [6, 8] } : { preset: "fogstar", install_cost: 2500 },
   ev_charger_kw: 7,
 });
 document.body.appendChild(card);

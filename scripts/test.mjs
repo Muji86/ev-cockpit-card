@@ -106,4 +106,19 @@ const real = M.dayCost([slot], { off: 0.0666, peak: 0.3646, s: 23, e: 6, standin
 const fixed = M.dayCost([slot], { off: 0.0666, peak: 0.3646, s: 23, e: 6, standing: 0 }, null, null);
 assert.ok(real.cost < fixed.cost, "Smart Charge slot priced off-peak");
 
+// Battery shortfall: 10 kWh usable at 3 kW; a peak of 4 kWh/h for 5 h runs out in hour 4 and is over the inverter every hour
+const busy = Array.from({ length: 24 }, (_, h) => ({ hour: h, home: h >= 17 && h < 22 ? 4 : 0.2, car: 0 }));
+const tf = { off: 0.1, peak: 0.3, s: 0, e: 5, standing: 0 };
+const bd = M.dayCost(busy, tf, { usable: 10, eff: 0.9, kw: 3 }, null);
+assert.equal(bd.emptyAt, 19, "2.4 kWh used by 17:00, then 3 kW: runs out at 19:00");
+assert.ok(Math.abs(bd.battUsed - 10) < 1e-9, "uses all of it");
+assert.ok(Math.abs(bd.gridEmpty + bd.gridPower + bd.battUsed - bd.peakHome) < 1e-9, "every peak kWh is accounted for");
+assert.equal(bd.overHours, 5, "every evening hour asks for more than 3 kW");
+assert.ok(Math.abs(bd.gridPower - 5) < 1e-9, "1 kWh over the inverter in each of them");
+const sf = M.shortfall({ a: busy, b: busy.map(x => ({ ...x, home: 0.3 })) }, tf, { usable: 10, eff: 0.9, kw: 3 });
+assert.equal(sf.n, 2); assert.equal(sf.covered, 1); assert.equal(sf.emptyDays, 1); assert.equal(sf.typicalEmpty, 19);
+// A short off-peak window can't fill a big battery through a small inverter
+const short = M.dayCost(busy, { ...tf, e: 1 }, { usable: 15, eff: 0.9, kw: 3 }, null);
+assert.ok(short.battUsed <= 3 * 0.9 + 1e-9, "only what one off-peak hour can charge");
+
 console.log("All checks passed");

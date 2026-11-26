@@ -231,7 +231,7 @@ const EvcModel = {
   isOff(x, tariff) { return tariff.actual && x.off != null ? x.off : this.inWindow(x.hour, tariff.s, tariff.e); },
 
   dayCost(day, tariff, battery, charger) {
-    const r = { carOff: 0, carPeak: 0, homeOff: 0, homePeak: 0, battUsed: 0, battCharge: 0 };
+    const r = { carOff: 0, carPeak: 0, homeOff: 0, homePeak: 0, battUsed: 0, battCharge: 0, gridEmpty: 0, gridPower: 0, emptyAt: null, overHours: 0, peakHome: 0 };
     const offHours = day.filter(x => this.isOff(x, tariff)).length;
     let carTotal = 0;
     day.forEach(x => { carTotal += x.car; });
@@ -239,22 +239,57 @@ const EvcModel = {
       r.carOff = Math.min(carTotal, charger.kw * offHours);
       r.carPeak = carTotal - r.carOff;
     }
-    let store = battery ? battery.usable : 0;
+    // The battery fills off-peak, as far as the inverter can charge it in the off-peak hours
+    let store = battery ? Math.min(battery.usable, battery.kw * offHours * battery.eff) : 0;
     const order = [...day].sort((a, b) => ((a.hour - tariff.e + 24) % 24) - ((b.hour - tariff.e + 24) % 24));
     order.forEach(x => {
       const off = this.isOff(x, tariff);
       if (!charger) r[off ? "carOff" : "carPeak"] += x.car;
-      if (off) { r.homeOff += x.home; return; }
+      if (off) {
+        r.homeOff += x.home;
+        if (battery) store = Math.min(battery.usable, store + battery.kw * battery.eff);   // a cheap slot in the day tops it up
+        return;
+      }
+      r.peakHome += x.home;
       const d = battery ? Math.min(store, battery.kw, x.home) : 0;
       store -= d;
       r.battUsed += d;
       r.homePeak += x.home - d;
+      // Why the house still drew from the grid at peak: the battery was empty, or the house wanted more than the inverter gives
+      const rest = x.home - d, over = battery ? Math.min(rest, Math.max(0, x.home - battery.kw)) : 0;
+      if (battery && rest > 1e-6) {
+        if (over > 1e-6) { r.gridPower += over; r.overHours++; }
+        if (rest - over > 1e-6) { r.gridEmpty += rest - over; if (r.emptyAt == null) r.emptyAt = x.hour; }
+      }
     });
     r.battCharge = battery ? r.battUsed / battery.eff : 0;
     r.offKwh = r.carOff + r.homeOff + r.battCharge;
     r.peakKwh = r.carPeak + r.homePeak;
     r.cost = r.offKwh * tariff.off + r.peakKwh * tariff.peak + tariff.standing;
     return r;
+  },
+
+  // How a battery copes on each real day: days it covers the whole peak, when it runs out, and what still comes from the grid.
+  // days: { key: [{hour, home, car, off?}] }; battery: { usable, eff, kw }
+  shortfall(days, tariff, battery) {
+    const keys = Object.keys(days).sort(), n = keys.length;
+    const out = { n, covered: 0, emptyDays: 0, powerDays: 0, emptyAt: [], gridEmpty: 0, gridPower: 0, carPeak: 0, overHours: 0, peakUse: [], maxHour: 0, worst: null };
+    keys.forEach(k => {
+      const r = this.dayCost(days[k], tariff, battery, null);
+      days[k].forEach(x => { if (!this.isOff(x, tariff)) out.maxHour = Math.max(out.maxHour, x.home); });
+      out.peakUse.push(r.peakHome);
+      out.gridEmpty += r.gridEmpty; out.gridPower += r.gridPower; out.carPeak += r.carPeak; out.overHours += r.overHours;
+      if (r.gridEmpty > 0.05) { out.emptyDays++; out.emptyAt.push(r.emptyAt); }
+      if (r.gridPower > 0.05) out.powerDays++;
+      if (r.gridEmpty + r.gridPower <= 0.05) out.covered++;
+      const g = r.gridEmpty + r.gridPower;
+      if (!out.worst || g > out.worst.grid) out.worst = { key: k, grid: g, peak: r.peakHome, emptyAt: r.emptyAt };
+    });
+    const q = (arr, p) => { if (!arr.length) return null; const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(p * a.length))]; };
+    out.typicalEmpty = q(out.emptyAt, 0.5);
+    out.peakMedian = q(out.peakUse, 0.5);
+    out.peak90 = q(out.peakUse, 0.9);
+    return out;
   },
 
   // Hourly car charging from a battery-level statistic: each rise in the hour's highest level
@@ -583,6 +618,18 @@ button.pill:hover,.hov:hover{border-color:var(--edge2);background:rgba(44,56,70,
 .kpi small{display:block;font-size:calc(var(--u)*.75);color:var(--t3);margin-top:4px}
 .chart{flex:1;min-height:calc(var(--u)*8)}
 .chart svg{width:100%;height:100%}
+.chart{position:relative}
+.chart .tip{position:absolute;pointer-events:none;z-index:3;display:flex;flex-direction:column;gap:2px;padding:7px 10px;border-radius:9px;background:rgba(8,12,16,.92);border:1px solid var(--edge2);font-size:12px;color:var(--t2);white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.chart .tip[hidden]{display:none}
+.chart .tip b{font-weight:500;color:var(--ink)}
+.chart .tip i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px}
+.seg.wrap{flex-wrap:wrap;align-self:flex-start}
+table.cmp{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.74);color:var(--t2)}
+table.cmp th{font-weight:400;color:var(--t3);text-align:right;padding:4px 0 4px 8px}
+table.cmp td{text-align:right;padding:5px 0 5px 8px;border-top:1px solid var(--edge)}
+table.cmp th:first-child,table.cmp td:first-child{text-align:left;padding-left:0}
+table.cmp tr.on td{color:var(--ink)}
+table.cmp small{color:var(--t3)}
 .key{display:flex;gap:16px;font-size:calc(var(--u)*.72);color:var(--t2);flex-wrap:wrap}
 .key i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
 .opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:calc(var(--u)*.5) 0;border-top:1px solid var(--edge)}
@@ -693,11 +740,21 @@ const EVC_DEFAULTS = {
   exit_path: "",
   tariff: { offpeak_rate: 0.09, peak_rate: 0.31, offpeak_start: 0, offpeak_end: 5, standing_charge: 0.4705, standing_charge_entity: "" },
   compare: null,      // { name, offpeak_rate, peak_rate, offpeak_start, offpeak_end, standing_charge }
-  home_battery: null, // { name, kwh, usable, efficiency, cost, inverter_options: [6, 8] }
+  home_battery: null, // { preset: "fogstar", install_cost, usable, efficiency } or { options: [{ name, kwh, inverter_kw, max_kw, price }] }
   ev_charger_kw: 0,
   energy: null,       // { car_statistic, home_statistic, months }
   entities: {},
 };
+
+// Fogstar 16.1 kWh 48V battery + inverter bundles (fogstar.co.uk, prices Nov 2026). The battery's 200 A BMS
+// gives about 10 kW, so a bigger inverter doesn't make one battery discharge faster. Off-grid inverters are left out:
+// they can't run a grid-tied house on a time-of-use tariff.
+const EVC_FOGSTAR = [
+  { name: "Fogstar 16.1 kWh + 3.6–6 kW hybrid", kwh: 16.1, inverter_kw: 6, max_kw: 10, price: 2625.99 },
+  { name: "Fogstar 16.1 kWh + 7–12 kW hybrid", kwh: 16.1, inverter_kw: 12, max_kw: 10, price: 3165.99 },
+  { name: "Fogstar 16.1 kWh + 14 kW hybrid", kwh: 16.1, inverter_kw: 14, max_kw: 10, price: 3853.99 },
+  { name: "Fogstar 16.1 kWh + 20 kW three-phase hybrid", kwh: 16.1, inverter_kw: 20, max_kw: 10, price: 4147.99, three_phase: true },
+];
 
 const EVC_ICON = {
   home: '<path d="M3 11 12 4l9 7M5 10v10h14V10"/>', bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', nav: '<path d="m4 11 16-7-7 16-2-7z"/>',
@@ -734,7 +791,7 @@ class EvCockpitCard extends HTMLElement {
       entities: Object.assign({}, config.entities || {}),
     });
     this._view = this._view || "home";
-    this._ui = this._ui || { who: "both", unit: "kwh", per: "year", inv: null, mon: null };
+    this._ui = this._ui || { who: "both", unit: "kwh", per: "year", inv: null, mon: null, side: "cost" };
     this._resolved = null;
     this._sig = "";
     this._applyFullscreen();
@@ -1254,17 +1311,33 @@ class EvCockpitCard extends HTMLElement {
     const now = { off: t.offpeak_rate, peak: t.peak_rate, s: t.offpeak_start, e: t.offpeak_end, standing: this._standing(), actual: true };
     const cmp = c.compare ? { off: c.compare.offpeak_rate, peak: c.compare.peak_rate, s: c.compare.offpeak_start, e: c.compare.offpeak_end, standing: c.compare.standing_charge ?? now.standing } : null;
     const base = cmp || now;
-    const hb = c.home_battery;
-    const inv = this._ui.inv || (hb && (hb.inverter_options || [6])[0]);
-    const batt = hb ? { usable: hb.kwh * (hb.usable ?? 0.95), eff: hb.efficiency ?? 0.9, kw: inv } : null;
+    const opt = this._battOption(), batt = opt && opt.model;
     const chg = c.ev_charger_kw ? { kw: c.ev_charger_kw } : null;
     const out = { today: { tariff: now, battery: null, charger: null, t: "Today", d: "Your current tariff" } };
     if (cmp) out.cmp = { tariff: cmp, battery: null, charger: null, t: `Switch to ${c.compare.name || "new tariff"}`, d: `${this._rate(cmp.off)} from ${this._hh(cmp.s)} to ${this._hh(cmp.e)}` };
-    if (batt) out.battery = { tariff: base, battery: batt, charger: null, t: "+ Home battery", d: `${hb.name || hb.kwh + " kWh battery"}, ${inv} kW inverter` };
+    if (batt) out.battery = { tariff: base, battery: batt, charger: null, t: "+ Home battery", d: `${opt.name} · ${this._money(opt.total, 0)} installed` };
     if (chg) out.charger = { tariff: base, battery: null, charger: chg, t: `+ ${chg.kw} kW car charger`, d: "All car charging moved off-peak" };
     if (batt && chg) out.both = { tariff: base, battery: batt, charger: chg, t: "+ Battery and charger", d: "Both of the above" };
     return out;
   }
+  // Home battery choices, each with its installed cost and what the model uses (usable kWh, efficiency, kW)
+  _battOptions() {
+    const hb = this._cfg.home_battery;
+    if (!hb) return [];
+    const legacy = !hb.options && hb.kwh && hb.preset !== "fogstar";   // the older single battery: { kwh, cost, inverter_options }
+    const list = hb.options || (legacy ? (hb.inverter_options || [6]).map(k => ({ name: `${hb.name || hb.kwh + " kWh battery"}, ${k} kW inverter`, kwh: hb.kwh, inverter_kw: k, price: hb.cost || 0 }))
+      : EVC_FOGSTAR.filter(o => !o.three_phase || hb.three_phase));
+    const install = hb.install_cost ?? (legacy ? 0 : 2500), share = hb.usable ?? 0.95, eff = hb.efficiency ?? 0.9;
+    return list.map((o, i) => {
+      const kw = Math.min(o.inverter_kw || 6, o.max_kw || Infinity), usable = o.kwh * (o.usable ?? share);
+      return Object.assign({}, o, { i, kw, usable, install, total: (o.price || 0) + install, model: { usable, eff: o.efficiency ?? eff, kw } });
+    });
+  }
+  _battOption() { const o = this._battOptions(); return o.length ? (o[this._ui.inv] || o[0]) : null; }
+
+  // The tariff the battery would sit on: the one compared with, or today's
+  _battTariff() { const sc = this._scenarios(); return (sc.cmp || sc.today).tariff; }
+
   _yearCosts() {
     const E = this._energy;
     if (!E || !Object.keys(E.days).length) return null;
@@ -1296,8 +1369,8 @@ class EvCockpitCard extends HTMLElement {
     const prevK = keys[keys.indexOf(mk) - 1], prev = prevK && E.months[prevK], prevShare = prev && (prev.car.off + prev.car.peak) ? prev.car.off / (prev.car.off + prev.car.peak) * 100 : null;
     const share = kwh ? m.car.off / kwh * 100 : 0;
     const homeCost = m.hasHome ? this._cost(m.carMetered) + this._cost(m.home) : 0;
-    const invs = (this._cfg.home_battery && this._cfg.home_battery.inverter_options) || [];
-    if (this._ui.inv == null && invs.length) this._ui.inv = invs[0];
+    const opts = this._battOptions();
+    if (this._ui.inv == null || !opts[this._ui.inv]) this._ui.inv = 0;
     const y = this._yearCosts(), seg = (k, opts) => `<span class="seg">${opts.map(([v, l]) => `<button data-ui="${k}" data-v="${v}" class="${String(this._ui[k]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</span>`;
     let what = `<div class="empty">The comparison needs at least one full day of readings from both the car and the house meter${this._cfg.energy.home_statistic ? "" : " (set <code>energy.home_statistic</code>)"}.</div>`;
     if (y && Object.keys(y.sc).length > 1) {
@@ -1306,11 +1379,11 @@ class EvCockpitCard extends HTMLElement {
         <div><div class="v">${this._money(y.year[id] / div, 0)}</div><div class="s" style="${id === "today" ? "color:var(--t3)" : ""}">${id === "today" ? (div === 1 ? "a year" : "a month") : (y.year.today - y.year[id] >= 0 ? "save " : "costs ") + this._money(Math.abs(y.year.today - y.year[id]) / div, 0)}</div></div>
         <div class="bar"><i style="width:${y.year[id] / max * 100}%"></i></div></div>`).join("")
         + `<div class="lbl">Based on ${y.n} day${y.n === 1 ? "" : "s"} of your real usage. Months without readings use your average day.</div>`;
-      const hb = this._cfg.home_battery;
+      const hb = this._cfg.home_battery, opt = this._battOption();
       if (hb && y.sc.battery) {
-        const without = y.sc.cmp ? "cmp" : "today", save = y.year[without] - y.year.battery, yrs = save > 0 ? hb.cost / save : null;
-        what += `<div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--edge)"><div class="lbl">Battery payback</div>
-          <div class="big" style="font-size:calc(var(--u)*2.4);margin-top:4px">${yrs == null ? "Doesn't pay back" : yrs.toFixed(1)} <span class="lbl">${yrs == null ? "" : `years to earn back ${this._money(hb.cost, 0)}`}</span></div>
+        const without = y.sc.cmp ? "cmp" : "today", save = y.year[without] - y.year.battery, yrs = save > 0 ? opt.total / save : null;
+        what += `<div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--edge)"><div class="lbl">Battery payback · ${this._money(opt.price, 0)} kit${opt.install ? ` + ${this._money(opt.install, 0)} install` : ""}</div>
+          <div class="big" style="font-size:calc(var(--u)*2.4);margin-top:4px">${yrs == null ? "Doesn't pay back" : yrs.toFixed(1)} <span class="lbl">${yrs == null ? "" : `years to earn back ${this._money(opt.total, 0)}`}</span></div>
           <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden"><i style="display:block;height:100%;width:${yrs == null ? 100 : Math.min(100, yrs / 15 * 100)}%;background:linear-gradient(90deg,var(--lime-d),var(--lime))"></i></div>
           <div class="key" style="justify-content:space-between;margin-top:6px"><span>0</span><span>5</span><span>10</span><span>15 yrs</span></div></div>`;
       }
@@ -1325,13 +1398,44 @@ class EvCockpitCard extends HTMLElement {
         <div style="display:grid;gap:calc(var(--u)*1.1);grid-template-rows:minmax(0,1fr) minmax(0,1fr);min-height:0">
           <div class="glass card"><h4>Usage · last 30 days <span style="display:flex;gap:8px;flex-wrap:wrap">${seg("who", [["both", "Combined"], ["car", "Car"], ["home", "House"]])}${seg("unit", [["kwh", "kWh"], ["money", this._cfg.currency]])}</span></h4>
             <div class="chart" id="usage"></div>
-            <div class="key"><span><i style="background:var(--lime)"></i>Off-peak</span><span><i style="background:rgba(255,255,255,.35)"></i>Peak</span><span id="usageSum" style="margin-left:auto"></span></div></div>
-          <div class="glass card"><h4>Monthly home charging <span class="lbl">Tap a month</span></h4><div class="chart" id="months"></div></div>
+            <div class="key"><span><i style="background:var(--lime)"></i>Off-peak</span><span><i style="background:rgba(255,255,255,.35)"></i>Peak</span><span style="color:var(--t3)">Tap a bar for the numbers</span><span id="usageSum" style="margin-left:auto"></span></div></div>
+          <div class="glass card"><h4>Monthly home charging <span class="lbl">Tap a bar for the numbers</span></h4><div class="chart" id="months"></div></div>
         </div>
-        <div class="glass card"><h4>What if you switched? ${seg("per", [["year", "Year"], ["month", "Month"]])}</h4>
-          ${invs.length > 1 ? seg("inv", invs.map(k => [k, `${k} kW inverter`])) : ""}
-          ${what}</div>
+        <div class="glass card"><h4>What if you switched? <span style="display:flex;gap:8px;flex-wrap:wrap">${opts.length && y ? seg("side", [["cost", "Costs"], ["batt", "Battery"]]) : ""}${this._ui.side === "batt" && opts.length && y ? "" : seg("per", [["year", "Year"], ["month", "Month"]])}</span></h4>
+          ${opts.length > 1 ? `<div class="seg wrap">${opts.map(o => `<button data-ui="inv" data-v="${o.i}" class="${o.i === this._ui.inv ? "on" : ""}">${o.inverter_kw} kW · ${this._money(o.total, 0)}</button>`).join("")}</div>` : ""}
+          ${this._ui.side === "batt" && opts.length && y ? this._shortfallHtml() : what}</div>
       </div>`;
+  }
+
+  // When the battery isn't enough: days it runs out, peaks above the inverter, and the size that would cover most days
+  _shortfallHtml() {
+    const E = this._energy, opts = this._battOptions(), opt = this._battOption(), t = this._battTariff();
+    if (!E || !opt || !Object.keys(E.days).length) return "";
+    const f = EvcModel.shortfall(E.days, t, opt.model), n = f.n, pct = v => Math.round(v / n * 100);
+    const line = (a, b) => `<div class="line"><span>${a}</span><b>${b}</b></div>`, kwh = v => `${v.toFixed(1)} kWh`;
+    const grid = (f.gridEmpty + f.gridPower) / n, perYear = (f.gridEmpty + f.gridPower) / n * 365 * t.peak;
+    const day = k => new Date(k + "T12:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    const packs = f.peak90 ? Math.max(1, Math.ceil(f.peak90 / (opt.usable / (opt.kwh / 16.1)) - 0.02)) : 1;
+    const rows = opts.map(o => {
+      const g = EvcModel.shortfall(E.days, t, o.model);
+      return `<tr class="${o.i === opt.i ? "on" : ""}"><td>${o.inverter_kw} kW${o.kw < o.inverter_kw ? ` <small>(${o.kw} kW)</small>` : ""}</td><td>${pct(g.covered)}%</td><td>${((g.gridEmpty + g.gridPower) / n).toFixed(1)}</td><td>${this._money(o.total, 0)}</td></tr>`;
+    }).join("");
+    return `<div class="lbl">${opt.kwh} kWh battery, ${opt.usable.toFixed(1)} kWh usable · ${opt.kw} kW from the battery${opt.kw < opt.inverter_kw ? ` (the battery's limit, below the ${opt.inverter_kw} kW inverter)` : ""} · on ${this._cfg.compare && this._scenarios().cmp ? evcEsc(this._cfg.compare.name || "the new tariff") : "your tariff"}</div>
+      <div>
+        ${line("Covers the whole peak", `${f.covered} of ${n} days (${pct(f.covered)}%)`)}
+        ${line("Runs out", f.emptyDays ? `${f.emptyDays} day${f.emptyDays === 1 ? "" : "s"}, usually by ${this._hh(f.typicalEmpty)}` : "Never")}
+        ${line("From the grid at peak", `${kwh(grid)} a day · ${this._money(perYear, 0)} a year`)}
+        ${line("&nbsp;· after the battery ran out", kwh(f.gridEmpty / n))}
+        ${line(`&nbsp;· above ${opt.kw} kW`, f.overHours ? `${kwh(f.gridPower / n)} · ${f.overHours} hour${f.overHours === 1 ? "" : "s"}` : "None")}
+        ${f.carPeak > 0.05 ? line("&nbsp;· car charging at peak (the battery doesn't charge the car)", kwh(f.carPeak / n)) : ""}
+        ${line("House at peak", `${kwh(f.peakMedian)} on a typical day · ${kwh(f.peak90)} on 9 days in 10`)}
+        ${f.worst && f.worst.grid > 0.05 ? line(`Worst day · ${day(f.worst.key)}`, `${kwh(f.worst.peak)} at peak, ${kwh(f.worst.grid)} from the grid`) : ""}
+        ${line("Busiest peak hour", `${f.maxHour.toFixed(1)} kWh`)}
+      </div>
+      <div class="lbl">${f.peak90 > opt.usable ? `To cover 9 days in 10 you'd need about ${kwh(f.peak90)} usable${Math.abs(opt.kwh - 16.1) < 0.05 ? `: ${packs} battery pack${packs === 1 ? "" : "s"}` : ""}.` : "This battery holds enough for 9 days in 10."}
+        Readings are hourly, so short spikes above ${opt.kw} kW (an oven and kettle together) also draw a little from the grid.</div>
+      ${opts.length > 1 ? `<table class="cmp"><tr><th>Inverter</th><th>Days covered</th><th>Grid kWh/day</th><th>Installed</th></tr>${rows}</table>` : ""}
+      <div class="lbl">Based on ${n} day${n === 1 ? "" : "s"} of your real usage.</div>`;
   }
 
   _drawCharts() {
@@ -1345,13 +1449,13 @@ class EvCockpitCard extends HTMLElement {
       let o = 0, p = 0;
       if (v) { if (who !== "home") { o += v.car.off; p += v.car.peak; } if (who !== "car") { o += v.home.off; p += v.home.peak; } }
       if (money) { o *= t.offpeak_rate; p *= t.peak_rate; }
-      rows.push({ l: i % 5 === 0 ? String(d.getDate()) : "", a: o, b: p });
+      rows.push({ l: i % 5 === 0 ? String(d.getDate()) : "", tl: d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }), a: o, b: p, none: !v });
     }
     this._bars("usage", rows, 4, null, null, money);
     const tot = rows.reduce((a, x) => a + x.a + x.b, 0);
     r.getElementById("usageSum").textContent = `30 days: ${money ? this._money(tot) : Math.round(tot) + " kWh"}`;
-    const mrows = E.monthKeys.map(k => ({ l: this._monthName(k), a: E.months[k].car.off, b: E.months[k].car.peak }));
-    this._bars("months", mrows, 18, E.monthKeys.indexOf(this._ui.mon), i => { this._ui.mon = E.monthKeys[i]; this._renderDynamic(); }, false);
+    const mrows = E.monthKeys.map(k => ({ l: this._monthName(k), tl: this._monthName(k, true), a: E.months[k].car.off, b: E.months[k].car.peak, extra: this._money(this._cost(E.months[k].car)) }));
+    this._bars("months", mrows, 18, E.monthKeys.indexOf(this._ui.mon), i => { this._ui.mon = E.monthKeys[i]; this._tip = { id: "months", i }; this._renderDynamic(); }, false);
   }
   _bars(id, rows, gap, sel, onPick, money) {
     const el = this.shadowRoot.getElementById(id), W = el.clientWidth || 500, H = el.clientHeight || 160, pl = 38, pb = 18, iw = W - pl, ih = H - pb - 6;
@@ -1366,8 +1470,34 @@ class EvCockpitCard extends HTMLElement {
       s += `<g data-i="${i}" style="cursor:${onPick ? "pointer" : "default"}" opacity="${dim}"><rect x="${x - gap / 2}" y="6" width="${bw}" height="${ih}" fill="transparent"/><rect x="${x}" y="${y0 - ha}" width="${w}" height="${ha}" rx="2" fill="var(--lime)"/><rect x="${x}" y="${y0 - ha - hb - (hb ? 1 : 0)}" width="${w}" height="${hb}" rx="2" fill="rgba(255,255,255,.32)"/></g>`;
       if (r.l) s += `<text x="${x + w / 2}" y="${H - 3}" text-anchor="middle" font-size="10" fill="rgba(226,233,240,.45)">${r.l}</text>`;
     });
-    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" font-family="inherit">${s}</svg>`;
-    if (onPick) el.querySelectorAll("g[data-i]").forEach(g => g.addEventListener("click", () => onPick(+g.dataset.i)));
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" font-family="inherit">${s}</svg><div class="tip" hidden></div>`;
+    // Tap (or hover) a bar for its numbers; tap it again, or anywhere else on the chart, to hide them
+    const tip = el.querySelector(".tip"), fmt = v => money ? this._money(v) : `${v.toFixed(v < 10 ? 1 : 0)} kWh`;
+    const show = i => {
+      const r = i == null ? null : rows[i];
+      if (!r) { tip.hidden = true; return; }
+      const tot = r.a + r.b;
+      tip.innerHTML = `<b>${evcEsc(r.tl || r.l)}</b>${r.none ? "<span>No readings</span>" : `<span>${fmt(tot)}${r.extra ? ` · ${r.extra}` : ""}</span>
+        <span><i style="background:var(--lime)"></i>Off-peak ${fmt(r.a)}${tot ? ` · ${Math.round(r.a / tot * 100)}%` : ""}</span><span><i style="background:rgba(255,255,255,.5)"></i>Peak ${fmt(r.b)}</span>`}`;
+      tip.hidden = false;
+      const cx = pl + i * bw + bw / 2, top = 6 + ih - ih * tot / max, tw = tip.offsetWidth, th = tip.offsetHeight;
+      tip.style.left = `${Math.max(0, Math.min(W - tw, cx - tw / 2))}px`;
+      tip.style.top = `${Math.max(0, top - th - 6)}px`;
+    };
+    el.querySelectorAll("g[data-i]").forEach(g => {
+      const i = +g.dataset.i;
+      g.addEventListener("click", ev => {
+        ev.stopPropagation();
+        const same = this._tip && this._tip.id === id && this._tip.i === i && !tip.hidden;
+        this._tip = same ? null : { id, i };
+        if (onPick && !same) return onPick(i);
+        show(same ? null : i);
+      });
+      g.addEventListener("pointerenter", ev => { if (ev.pointerType === "mouse") show(i); });
+      g.addEventListener("pointerleave", ev => { if (ev.pointerType === "mouse") show(this._tip && this._tip.id === id ? this._tip.i : null); });
+    });
+    el.onclick = () => { this._tip = null; show(null); };
+    if (this._tip && this._tip.id === id) show(this._tip.i);
   }
 
   // ── Settings page ───────────────────────────────────────────
@@ -1384,7 +1514,7 @@ class EvCockpitCard extends HTMLElement {
       <div class="glass card"><h4>Tariff</h4><div>
         ${line("Off-peak", `${this._rate(t.offpeak_rate)} · ${this._hh(t.offpeak_start)} to ${this._hh(t.offpeak_end)}`)}${line("Peak", this._rate(t.peak_rate))}${line("Standing charge", `${this._rate(this._standing())} a day`)}
         ${c.compare ? line(`Compare with ${evcEsc(c.compare.name || "")}`, `${this._rate(c.compare.offpeak_rate)} / ${this._rate(c.compare.peak_rate)}`) : ""}
-        ${c.home_battery ? line("Home battery", `${c.home_battery.kwh} kWh · ${this._money(c.home_battery.cost, 0)}`) : ""}
+        ${this._battOption() ? line("Home battery", `${this._battOptions().length} option${this._battOptions().length === 1 ? "" : "s"} · from ${this._money(Math.min(...this._battOptions().map(o => o.total)), 0)} installed`) : ""}
         ${c.ev_charger_kw ? line("Car charger", `${c.ev_charger_kw} kW`) : ""}
         ${line("Charging statistic", c.energy && c.energy.car_statistic ? evcEsc(c.energy.car_statistic) : "Not set")}</div></div>
       <div class="glass card"><h4>Entities found <span class="lbl">${Object.keys(this._resolved.entities).length} of ${Object.keys(EVC_ROLES).length}</span></h4><div style="max-height:calc(var(--u)*26);overflow:auto">${ents}</div></div>
@@ -1518,8 +1648,12 @@ class EvCockpitCardEditor extends HTMLElement {
         { type: "grid", name: "", schema: [num("offpeak_rate", "Off-peak rate"), num("peak_rate", "Peak rate"), hour("offpeak_start", "Off-peak starts"), hour("offpeak_end", "Off-peak ends"), num("standing_charge", "Standing charge")] },
       ] },
       { name: "home_battery", type: "expandable", title: "Home battery to compare (optional)", schema: [
-        { name: "name", label: "Battery name", selector: { text: {} } },
-        { type: "grid", name: "", schema: [num("kwh", "Capacity (kWh)", 0.1), num("cost", "Installed cost", 1), num("usable", "Usable share (0–1)", 0.01), num("efficiency", "Round-trip efficiency (0–1)", 0.01)] },
+        { name: "preset", label: "Battery", selector: { select: { mode: "dropdown", options: [
+          { value: "fogstar", label: "Fogstar 16.1 kWh + inverter bundles" }, { value: "custom", label: "My own battery (capacity and cost below)" }] } } },
+        { type: "grid", name: "", schema: [num("install_cost", "Installation cost (default 2500 for Fogstar)", 1), num("usable", "Usable share (0–1, default 0.95)", 0.01),
+          num("efficiency", "Round-trip efficiency (0–1)", 0.01), { name: "three_phase", label: "Three-phase supply", selector: { boolean: {} } }] },
+        { name: "name", label: "Own battery: name", selector: { text: {} } },
+        { type: "grid", name: "", schema: [num("kwh", "Own battery: capacity (kWh)", 0.1), num("cost", "Own battery: price", 1)] },
       ] },
       { name: "ev_charger_kw", label: "Home car charger to compare, kW (optional)", selector: { number: { min: 0, max: 22, step: 0.1, mode: "box" } } },
       { name: "entities", type: "expandable", title: "Entities (override what was found)", schema:

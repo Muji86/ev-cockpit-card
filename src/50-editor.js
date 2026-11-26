@@ -48,8 +48,12 @@ class EvCockpitCardEditor extends HTMLElement {
         { type: "grid", name: "", schema: [num("offpeak_rate", "Off-peak rate"), num("peak_rate", "Peak rate"), hour("offpeak_start", "Off-peak starts"), hour("offpeak_end", "Off-peak ends"), num("standing_charge", "Standing charge")] },
       ] },
       { name: "home_battery", type: "expandable", title: "Home battery to compare (optional)", schema: [
-        { name: "name", label: "Battery name", selector: { text: {} } },
-        { type: "grid", name: "", schema: [num("kwh", "Capacity (kWh)", 0.1), num("cost", "Installed cost", 1), num("usable", "Usable share (0–1)", 0.01), num("efficiency", "Round-trip efficiency (0–1)", 0.01)] },
+        { name: "preset", label: "Battery", selector: { select: { mode: "dropdown", options: [
+          { value: "fogstar", label: "Fogstar 16.1 kWh + inverter bundles" }, { value: "custom", label: "My own battery (capacity and cost below)" }] } } },
+        { type: "grid", name: "", schema: [num("install_cost", "Installation cost (default 2500 for Fogstar)", 1), num("usable", "Usable share (0–1, default 0.95)", 0.01),
+          num("efficiency", "Round-trip efficiency (0–1)", 0.01), { name: "three_phase", label: "Three-phase supply", selector: { boolean: {} } }] },
+        { name: "name", label: "Own battery: name", selector: { text: {} } },
+        { type: "grid", name: "", schema: [num("kwh", "Own battery: capacity (kWh)", 0.1), num("cost", "Own battery: price", 1)] },
       ] },
       { name: "ev_charger_kw", label: "Home car charger to compare, kW (optional)", selector: { number: { min: 0, max: 22, step: 0.1, mode: "box" } } },
       { name: "entities", type: "expandable", title: "Entities (override what was found)", schema:

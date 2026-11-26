@@ -12,7 +12,7 @@ const EvcModel = {
   isOff(x, tariff) { return tariff.actual && x.off != null ? x.off : this.inWindow(x.hour, tariff.s, tariff.e); },
 
   dayCost(day, tariff, battery, charger) {
-    const r = { carOff: 0, carPeak: 0, homeOff: 0, homePeak: 0, battUsed: 0, battCharge: 0 };
+    const r = { carOff: 0, carPeak: 0, homeOff: 0, homePeak: 0, battUsed: 0, battCharge: 0, gridEmpty: 0, gridPower: 0, emptyAt: null, overHours: 0, peakHome: 0 };
     const offHours = day.filter(x => this.isOff(x, tariff)).length;
     let carTotal = 0;
     day.forEach(x => { carTotal += x.car; });
@@ -20,22 +20,57 @@ const EvcModel = {
       r.carOff = Math.min(carTotal, charger.kw * offHours);
       r.carPeak = carTotal - r.carOff;
     }
-    let store = battery ? battery.usable : 0;
+    // The battery fills off-peak, as far as the inverter can charge it in the off-peak hours
+    let store = battery ? Math.min(battery.usable, battery.kw * offHours * battery.eff) : 0;
     const order = [...day].sort((a, b) => ((a.hour - tariff.e + 24) % 24) - ((b.hour - tariff.e + 24) % 24));
     order.forEach(x => {
       const off = this.isOff(x, tariff);
       if (!charger) r[off ? "carOff" : "carPeak"] += x.car;
-      if (off) { r.homeOff += x.home; return; }
+      if (off) {
+        r.homeOff += x.home;
+        if (battery) store = Math.min(battery.usable, store + battery.kw * battery.eff);   // a cheap slot in the day tops it up
+        return;
+      }
+      r.peakHome += x.home;
       const d = battery ? Math.min(store, battery.kw, x.home) : 0;
       store -= d;
       r.battUsed += d;
       r.homePeak += x.home - d;
+      // Why the house still drew from the grid at peak: the battery was empty, or the house wanted more than the inverter gives
+      const rest = x.home - d, over = battery ? Math.min(rest, Math.max(0, x.home - battery.kw)) : 0;
+      if (battery && rest > 1e-6) {
+        if (over > 1e-6) { r.gridPower += over; r.overHours++; }
+        if (rest - over > 1e-6) { r.gridEmpty += rest - over; if (r.emptyAt == null) r.emptyAt = x.hour; }
+      }
     });
     r.battCharge = battery ? r.battUsed / battery.eff : 0;
     r.offKwh = r.carOff + r.homeOff + r.battCharge;
     r.peakKwh = r.carPeak + r.homePeak;
     r.cost = r.offKwh * tariff.off + r.peakKwh * tariff.peak + tariff.standing;
     return r;
+  },
+
+  // How a battery copes on each real day: days it covers the whole peak, when it runs out, and what still comes from the grid.
+  // days: { key: [{hour, home, car, off?}] }; battery: { usable, eff, kw }
+  shortfall(days, tariff, battery) {
+    const keys = Object.keys(days).sort(), n = keys.length;
+    const out = { n, covered: 0, emptyDays: 0, powerDays: 0, emptyAt: [], gridEmpty: 0, gridPower: 0, carPeak: 0, overHours: 0, peakUse: [], maxHour: 0, worst: null };
+    keys.forEach(k => {
+      const r = this.dayCost(days[k], tariff, battery, null);
+      days[k].forEach(x => { if (!this.isOff(x, tariff)) out.maxHour = Math.max(out.maxHour, x.home); });
+      out.peakUse.push(r.peakHome);
+      out.gridEmpty += r.gridEmpty; out.gridPower += r.gridPower; out.carPeak += r.carPeak; out.overHours += r.overHours;
+      if (r.gridEmpty > 0.05) { out.emptyDays++; out.emptyAt.push(r.emptyAt); }
+      if (r.gridPower > 0.05) out.powerDays++;
+      if (r.gridEmpty + r.gridPower <= 0.05) out.covered++;
+      const g = r.gridEmpty + r.gridPower;
+      if (!out.worst || g > out.worst.grid) out.worst = { key: k, grid: g, peak: r.peakHome, emptyAt: r.emptyAt };
+    });
+    const q = (arr, p) => { if (!arr.length) return null; const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(p * a.length))]; };
+    out.typicalEmpty = q(out.emptyAt, 0.5);
+    out.peakMedian = q(out.peakUse, 0.5);
+    out.peak90 = q(out.peakUse, 0.9);
+    return out;
   },
 
   // Hourly car charging from a battery-level statistic: each rise in the hour's highest level
