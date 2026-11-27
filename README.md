@@ -134,6 +134,19 @@ home_battery:
       install_cost: 1800
 ```
 
+When a quote gives one all-in price, use `package_cost` instead of the battery, inverter and installation costs.
+`extras_cost` adds add-ons and `discount` takes money off:
+
+```yaml
+    - source: Nebula + EPS, PV rewire
+      battery_kwh: 32.2
+      inverter_kw: 8
+      package_cost: 6495     # 2 × 16.1 kWh, 6 kW inverter, installed
+      inverter_cost: 390     # upgrade to 8 kW
+      extras_cost: 900       # power-cut backup + solar rewire
+      discount: 200
+```
+
 They can also be added in the card's visual editor, under "Home battery to compare". To compare your own choices
 without the dropdown, list them:
 

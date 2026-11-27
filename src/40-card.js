@@ -601,7 +601,10 @@ class EvCockpitCard extends HTMLElement {
     const quotes = (hb.quotes || []).filter(q => q && +q.battery_kwh > 0).map(q => ({
       quote: true, name: q.source || "Quote", source: q.source || "Quote", kwh: +q.battery_kwh, usable_kwh: q.usable_kwh ? +q.usable_kwh : null,
       inverter_kw: +q.inverter_kw || 6, max_kw: q.max_kw ? +q.max_kw : null, battery_cost: +q.battery_cost || 0, inverter_cost: +q.inverter_cost || 0,
-      price: (+q.battery_cost || 0) + (+q.inverter_cost || 0), install: q.install_cost != null && q.install_cost !== "" ? +q.install_cost : null,
+      // package_cost: an all-in price (battery, inverter and fitting); extras_cost: add-ons; discount: taken off the total
+      package_cost: +q.package_cost || 0, extras_cost: +q.extras_cost || 0, discount: +q.discount || 0,
+      price: (+q.package_cost || 0) + (+q.battery_cost || 0) + (+q.inverter_cost || 0) + (+q.extras_cost || 0) - (+q.discount || 0),
+      install: q.install_cost != null && q.install_cost !== "" ? +q.install_cost : null,
       efficiency: q.efficiency ? +q.efficiency : undefined }));
     const list = quotes.length ? quotes : hb.options || (legacy ? (hb.inverter_options || [6]).map(k => ({ name: `${hb.name || hb.kwh + " kWh battery"}, ${k} kW inverter`, kwh: hb.kwh, inverter_kw: k, price: hb.cost || 0 }))
       : (hb.batteries || [1, 2]).flatMap(n => invs.map(v => ({ name: `${+(F.kwh * n).toFixed(1)} kWh Fogstar, ${v.kw} kW inverter`, kwh: +(F.kwh * n).toFixed(1), packs: n,
@@ -616,9 +619,16 @@ class EvCockpitCard extends HTMLElement {
     const o = this._battOptions();
     if (!o.length) return null;
     // The quote chosen last (remembered for this Home Assistant user) is the one shown
-    if (this._ui.inv == null && this._quotePick) { const q = o.find(x => x.quote && x.source === this._quotePick); if (q) this._ui.inv = q.i; }
+    if (this._ui.inv == null && this._quotePick) { const q = o.find(x => x.quote && this._quoteId(x) === this._quotePick); if (q) this._ui.inv = q.i; }
     return o[this._ui.inv] || o[0];
   }
+  // "£4,695 package + £390 inverter + £900 add-ons − £200 discount", leaving out the parts a quote doesn't have
+  _quoteParts(o) {
+    const p = [[o.package_cost, "package"], [o.battery_cost, "battery"], [o.inverter_cost, "inverter"], [o.install, "install"], [o.extras_cost, "add-ons"]]
+      .filter(([v]) => v).map(([v, l]) => `${this._money(v, 0)} ${l}`).join(" + ");
+    return p + (o.discount ? ` − ${this._money(o.discount, 0)} discount` : "");
+  }
+  _quoteId(o) { return `${o.source}|${o.kwh}|${o.inverter_kw}`; }   // several quotes can share a source
   _quoteKey() { return "ev-cockpit-battery-quote"; }
   async _loadQuotePick() {
     if (this._quotePickLoaded || !this._hass) return;
@@ -696,7 +706,7 @@ class EvCockpitCard extends HTMLElement {
       const hb = this._cfg.home_battery, opt = this._battOption();
       if (hb && y.sc.battery) {
         const without = y.sc.cmp ? "cmp" : "today", save = y.year[without] - y.year.battery, yrs = save > 0 ? opt.total / save : null;
-        what += `<div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--edge)"><div class="lbl">Battery payback · ${opt.quote ? `${this._money(opt.battery_cost, 0)} battery + ${this._money(opt.inverter_cost, 0)} inverter` : `${this._money(opt.price, 0)} kit`}${opt.install ? ` + ${this._money(opt.install, 0)} install` : ""}</div>
+        what += `<div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--edge)"><div class="lbl">Battery payback · ${opt.quote ? this._quoteParts(opt) : `${this._money(opt.price, 0)} kit${opt.install ? ` + ${this._money(opt.install, 0)} install` : ""}`}</div>
           <div class="big" style="font-size:calc(var(--u)*2.4);margin-top:4px">${yrs == null ? "Doesn't pay back" : yrs.toFixed(1)} <span class="lbl">${yrs == null ? "" : `years to earn back ${this._money(opt.total, 0)}`}</span></div>
           <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden"><i style="display:block;height:100%;width:${yrs == null ? 100 : Math.min(100, yrs / 15 * 100)}%;background:linear-gradient(90deg,var(--lime-d),var(--lime))"></i></div>
           <div class="key" style="justify-content:space-between;margin-top:6px"><span>0</span><span>5</span><span>10</span><span>15 yrs</span></div></div>`;
@@ -907,7 +917,7 @@ class EvCockpitCard extends HTMLElement {
   _onChange(e) {
     if (e.target.dataset && e.target.dataset.quote != null) {
       const o = this._battOptions()[+e.target.value];
-      if (o) { this._ui.inv = o.i; this._saveQuotePick(o.source); this._renderDynamic(); }
+      if (o) { this._ui.inv = o.i; this._saveQuotePick(this._quoteId(o)); this._renderDynamic(); }
       return;
     }
     const r = e.target.dataset && e.target.dataset.range;

@@ -57,6 +57,9 @@ class EvCockpitCardEditor extends HTMLElement {
           inverter_kw: { label: "Inverter power (kW)", selector: { number: { min: 0, step: 0.1, mode: "box" } } },
           inverter_cost: { label: "Inverter cost", selector: { number: { min: 0, step: 1, mode: "box" } } },
           install_cost: { label: "Installation cost", selector: { number: { min: 0, step: 1, mode: "box" } } },
+          package_cost: { label: "All-in price, if the quote gives one (battery, inverter and fitting)", selector: { number: { min: 0, step: 1, mode: "box" } } },
+          extras_cost: { label: "Add-ons", selector: { number: { min: 0, step: 1, mode: "box" } } },
+          discount: { label: "Discount", selector: { number: { min: 0, step: 1, mode: "box" } } },
         } } } },
         { name: "preset", label: "Battery", selector: { select: { mode: "dropdown", options: [
           { value: "fogstar", label: "Fogstar 16.1 kWh + inverter bundles" }, { value: "custom", label: "My own battery (capacity and cost below)" }] } } },
