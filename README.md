@@ -112,7 +112,30 @@ ev_charger_kw: 7            # optional: a faster home charger to compare
 The Fogstar preset compares one or two 16.1 kWh batteries (16 or 32 kWh) with a 6 kW inverter (the GEN3 3.6–6K)
 or an 8 kW one (the GEN PRO 7–12K), at their November 2026 prices: the 16.1 kWh bundles are £2,625.99 and £3,165.99,
 and a second battery is £1,719.99. Pick the size and inverter on the card. `batteries: [1, 2]`, `inverters: [6, 8]` and
-`extra_battery_price` change the choices. To compare your own choices, list them:
+`extra_battery_price` change the choices. **Quotes.** To compare real quotes, list them. The card shows a dropdown of them, and the one you picked last is
+shown next time (remembered for your Home Assistant user). The total is the battery, inverter and installation
+added together:
+
+```yaml
+home_battery:
+  quotes:
+    - source: Fogstar direct
+      battery_kwh: 16.1
+      usable_kwh: 15.3        # optional: what the battery lets you use (default 95%)
+      battery_cost: 1719.99
+      inverter_kw: 6
+      inverter_cost: 906
+      install_cost: 2500
+    - source: Local installer
+      battery_kwh: 32.2
+      battery_cost: 3800
+      inverter_kw: 8
+      inverter_cost: 1200
+      install_cost: 1800
+```
+
+They can also be added in the card's visual editor, under "Home battery to compare". To compare your own choices
+without the dropdown, list them:
 
 ```yaml
 home_battery:

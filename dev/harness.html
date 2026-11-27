@@ -86,14 +86,19 @@ const hass = {
   states, entities, devices: { car1: { id: "car1", name: "My car", model: "Model Y" }, id4: { id: "id4", name: "VW ID.4", model: "ID.4", manufacturer: "Volkswagen" } },
   config: { time_zone: "Europe/London", unit_system: { length: "mi" } },
   callService: (d, s, data) => { console.log("SERVICE", d, s, JSON.stringify(data)); return Promise.resolve(); },
-  callWS: msg => Promise.resolve(stats(msg.statistic_ids)),
+  callWS: msg => msg.type === "frontend/get_user_data" ? Promise.resolve({ value: localStorage.getItem("harness-quote") })
+    : msg.type === "frontend/set_user_data" ? (localStorage.setItem("harness-quote", msg.value), Promise.resolve(null))
+    : Promise.resolve(stats(msg.statistic_ids)),
 };
 const card = document.createElement("ev-cockpit-card");
 card.setConfig({
   type: "custom:ev-cockpit-card", vehicle: isVW ? "volkswagen" : "tesla", fullscreen: q.get("fs") !== "0",
   energy: { car_statistic: "sensor.car_home_charging", home_statistic: "meter:electricity" },
   compare: { name: "EDF overnight", offpeak_rate: 0.066, peak_rate: 0.36, offpeak_start: 23, offpeak_end: 6, standing_charge: 0.4705 },
-  home_battery: q.get("batt") === "old" ? { name: "Fogstar 16 kWh", kwh: 16, usable: 0.95, efficiency: 0.9, cost: 5000, inverter_options: [6, 8] } : { preset: "fogstar", install_cost: 2500 },
+  home_battery: q.get("batt") === "quotes" ? { quotes: [
+    { source: "Fogstar direct", battery_kwh: 16.1, battery_cost: 1719.99, inverter_kw: 6, inverter_cost: 906, install_cost: 2500 },
+    { source: "Local installer", battery_kwh: 32.2, usable_kwh: 30, battery_cost: 3800, inverter_kw: 8, inverter_cost: 1200, install_cost: 1800 },
+  ] } : q.get("batt") === "old" ? { name: "Fogstar 16 kWh", kwh: 16, usable: 0.95, efficiency: 0.9, cost: 5000, inverter_options: [6, 8] } : { preset: "fogstar", install_cost: 2500 },
   ev_charger_kw: 7,
 });
 document.body.appendChild(card);

@@ -147,6 +147,8 @@ button.pill:hover,.hov:hover{border-color:var(--edge2);background:rgba(44,56,70,
 .chart .tip b{font-weight:500;color:var(--ink)}
 .chart .tip i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px}
 .seg.wrap{flex-wrap:wrap;align-self:flex-start}
+.pick{display:flex;align-items:center;gap:10px;min-width:0}
+.pick select{flex:1;min-width:0;font:inherit;font-size:calc(var(--u)*.78);color:var(--ink);background:rgba(0,0,0,.25);border:1px solid var(--edge2);border-radius:10px;padding:calc(var(--u)*.45) calc(var(--u)*.6);color-scheme:dark}
 table.cmp{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.74);color:var(--t2)}
 table.cmp th{font-weight:400;color:var(--t3);text-align:right;padding:4px 0 4px 8px}
 table.cmp td{text-align:right;padding:5px 0 5px 8px;border-top:1px solid var(--edge)}

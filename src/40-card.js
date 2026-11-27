@@ -9,7 +9,7 @@ const EVC_DEFAULTS = {
   exit_path: "",
   tariff: { offpeak_rate: 0.09, peak_rate: 0.31, offpeak_start: 0, offpeak_end: 5, standing_charge: 0.4705, standing_charge_entity: "" },
   compare: null,      // { name, offpeak_rate, peak_rate, offpeak_start, offpeak_end, standing_charge }
-  home_battery: null, // { preset: "fogstar", install_cost, usable, efficiency } or { options: [{ name, kwh, inverter_kw, max_kw, price }] }
+  home_battery: null, // { quotes: [{ source, battery_kwh, usable_kwh, battery_cost, inverter_kw, inverter_cost, install_cost }] } or { preset: "fogstar", install_cost }
   ev_charger_kw: 0,
   energy: null,       // { car_statistic, home_statistic, months }
   entities: {},
@@ -597,16 +597,48 @@ class EvCockpitCard extends HTMLElement {
     const legacy = !hb.options && hb.kwh && hb.preset !== "fogstar";   // the older single battery: { kwh, cost, inverter_options }
     const F = EVC_FOGSTAR, invs = F.inverters.filter(v => !hb.inverters || hb.inverters.includes(v.kw));
     // Fogstar: every battery size (1 or 2 batteries by default) with every inverter
-    const list = hb.options || (legacy ? (hb.inverter_options || [6]).map(k => ({ name: `${hb.name || hb.kwh + " kWh battery"}, ${k} kW inverter`, kwh: hb.kwh, inverter_kw: k, price: hb.cost || 0 }))
+    // Quotes: each one is a battery, an inverter and an installation from one supplier, picked from a dropdown
+    const quotes = (hb.quotes || []).filter(q => q && +q.battery_kwh > 0).map(q => ({
+      quote: true, name: q.source || "Quote", source: q.source || "Quote", kwh: +q.battery_kwh, usable_kwh: q.usable_kwh ? +q.usable_kwh : null,
+      inverter_kw: +q.inverter_kw || 6, max_kw: q.max_kw ? +q.max_kw : null, battery_cost: +q.battery_cost || 0, inverter_cost: +q.inverter_cost || 0,
+      price: (+q.battery_cost || 0) + (+q.inverter_cost || 0), install: q.install_cost != null && q.install_cost !== "" ? +q.install_cost : null,
+      efficiency: q.efficiency ? +q.efficiency : undefined }));
+    const list = quotes.length ? quotes : hb.options || (legacy ? (hb.inverter_options || [6]).map(k => ({ name: `${hb.name || hb.kwh + " kWh battery"}, ${k} kW inverter`, kwh: hb.kwh, inverter_kw: k, price: hb.cost || 0 }))
       : (hb.batteries || [1, 2]).flatMap(n => invs.map(v => ({ name: `${+(F.kwh * n).toFixed(1)} kWh Fogstar, ${v.kw} kW inverter`, kwh: +(F.kwh * n).toFixed(1), packs: n,
         inverter_kw: v.kw, max_kw: F.max_kw * n, price: +(v.price + (n - 1) * (hb.extra_battery_price ?? F.extra_battery_price)).toFixed(2) }))));
-    const install = hb.install_cost ?? (legacy ? 0 : 2500), share = hb.usable ?? 0.95, eff = hb.efficiency ?? 0.9;
+    const install0 = hb.install_cost ?? (legacy || quotes.length ? 0 : 2500), share = hb.usable ?? 0.95, eff = hb.efficiency ?? 0.9;
     return list.map((o, i) => {
-      const kw = Math.min(o.inverter_kw || 6, o.max_kw || Infinity), usable = o.kwh * (o.usable ?? share);
+      const kw = Math.min(o.inverter_kw || 6, o.max_kw || Infinity), usable = o.usable_kwh || o.kwh * (o.usable ?? share), install = o.install ?? install0;
       return Object.assign({}, o, { i, kw, usable, install, total: (o.price || 0) + install, model: { usable, eff: o.efficiency ?? eff, kw } });
     });
   }
-  _battOption() { const o = this._battOptions(); return o.length ? (o[this._ui.inv] || o[0]) : null; }
+  _battOption() {
+    const o = this._battOptions();
+    if (!o.length) return null;
+    // The quote chosen last (remembered for this Home Assistant user) is the one shown
+    if (this._ui.inv == null && this._quotePick) { const q = o.find(x => x.quote && x.source === this._quotePick); if (q) this._ui.inv = q.i; }
+    return o[this._ui.inv] || o[0];
+  }
+  _quoteKey() { return "ev-cockpit-battery-quote"; }
+  async _loadQuotePick() {
+    if (this._quotePickLoaded || !this._hass) return;
+    this._quotePickLoaded = true;
+    try { this._quotePick = localStorage.getItem(this._quoteKey()); } catch (e) { /* no storage */ }
+    try {
+      const r = await this._hass.callWS({ type: "frontend/get_user_data", key: this._quoteKey() });
+      if (r && r.value) this._quotePick = r.value;
+    } catch (e) { /* older Home Assistant or no user: keep the browser's copy */ }
+    if (this._quotePick && this._view === "energy") { this._ui.inv = null; this._renderDynamic(); }
+  }
+  _saveQuotePick(source) {
+    this._quotePick = source;
+    try { localStorage.setItem(this._quoteKey(), source); } catch (e) { /* no storage */ }
+    if (this._hass) this._hass.callWS({ type: "frontend/set_user_data", key: this._quoteKey(), value: source }).catch(() => {});
+  }
+  _quoteSelect(opts) {
+    const cur = this._battOption();
+    return `<label class="pick"><span class="lbl">Quote</span><select data-quote>${opts.map(o => `<option value="${o.i}" ${o.i === cur.i ? "selected" : ""}>${evcEsc(o.source)} · ${+o.kwh.toFixed(1)} kWh · ${o.inverter_kw} kW · ${this._money(o.total, 0)}</option>`).join("")}</select></label>`;
+  }
   // Battery size and inverter pickers; each tap picks the option with that size and the current inverter (or the reverse)
   _battPickers(opts) {
     const cur = this._battOption(), sizes = [...new Set(opts.map(o => o.kwh))], invs = [...new Set(opts.map(o => o.inverter_kw))];
@@ -650,6 +682,8 @@ class EvCockpitCard extends HTMLElement {
     const share = kwh ? m.car.off / kwh * 100 : 0;
     const homeCost = m.hasHome ? this._cost(m.carMetered) + this._cost(m.home) : 0;
     const opts = this._battOptions();
+    this._loadQuotePick();
+    this._battOption();
     if (this._ui.inv == null || !opts[this._ui.inv]) this._ui.inv = 0;
     const y = this._yearCosts(), seg = (k, opts) => `<span class="seg">${opts.map(([v, l]) => `<button data-ui="${k}" data-v="${v}" class="${String(this._ui[k]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</span>`;
     let what = `<div class="empty">The comparison needs at least one full day of readings from both the car and the house meter${this._cfg.energy.home_statistic ? "" : " (set <code>energy.home_statistic</code>)"}.</div>`;
@@ -662,7 +696,7 @@ class EvCockpitCard extends HTMLElement {
       const hb = this._cfg.home_battery, opt = this._battOption();
       if (hb && y.sc.battery) {
         const without = y.sc.cmp ? "cmp" : "today", save = y.year[without] - y.year.battery, yrs = save > 0 ? opt.total / save : null;
-        what += `<div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--edge)"><div class="lbl">Battery payback · ${this._money(opt.price, 0)} kit${opt.install ? ` + ${this._money(opt.install, 0)} install` : ""}</div>
+        what += `<div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--edge)"><div class="lbl">Battery payback · ${opt.quote ? `${this._money(opt.battery_cost, 0)} battery + ${this._money(opt.inverter_cost, 0)} inverter` : `${this._money(opt.price, 0)} kit`}${opt.install ? ` + ${this._money(opt.install, 0)} install` : ""}</div>
           <div class="big" style="font-size:calc(var(--u)*2.4);margin-top:4px">${yrs == null ? "Doesn't pay back" : yrs.toFixed(1)} <span class="lbl">${yrs == null ? "" : `years to earn back ${this._money(opt.total, 0)}`}</span></div>
           <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden"><i style="display:block;height:100%;width:${yrs == null ? 100 : Math.min(100, yrs / 15 * 100)}%;background:linear-gradient(90deg,var(--lime-d),var(--lime))"></i></div>
           <div class="key" style="justify-content:space-between;margin-top:6px"><span>0</span><span>5</span><span>10</span><span>15 yrs</span></div></div>`;
@@ -682,7 +716,7 @@ class EvCockpitCard extends HTMLElement {
           <div class="glass card"><h4>Monthly home charging <span class="lbl">Tap a bar for the numbers</span></h4><div class="chart" id="months"></div></div>
         </div>
         <div class="glass card"><h4>What if you switched? <span style="display:flex;gap:8px;flex-wrap:wrap">${opts.length && y ? seg("side", [["cost", "Costs"], ["batt", "Battery"]]) : ""}${this._ui.side === "batt" && opts.length && y ? "" : seg("per", [["year", "Year"], ["month", "Month"]])}</span></h4>
-          ${opts.length > 1 ? this._battPickers(opts) : ""}
+          ${opts.length && opts[0].quote ? this._quoteSelect(opts) : opts.length > 1 ? this._battPickers(opts) : ""}
           ${this._ui.side === "batt" && opts.length && y ? this._shortfallHtml() : what}</div>
       </div>`;
   }
@@ -698,7 +732,7 @@ class EvCockpitCard extends HTMLElement {
     const packs = f.peak90 ? Math.max(1, Math.ceil(f.peak90 / (opt.usable / (opt.packs || opt.kwh / 16.1)) - 0.02)) : 1;
     const rows = opts.map(o => {
       const g = EvcModel.shortfall(E.days, t, o.model);
-      return `<tr class="${o.i === opt.i ? "on" : ""}"><td>${Math.round(o.kwh)} kWh · ${o.inverter_kw} kW${o.kw < o.inverter_kw ? ` <small>(${o.kw} kW)</small>` : ""}</td><td>${pct(g.covered)}%</td><td>${((g.gridEmpty + g.gridPower) / n).toFixed(1)}</td><td>${this._money(o.total, 0)}</td></tr>`;
+      return `<tr class="${o.i === opt.i ? "on" : ""}"><td>${o.quote ? `${evcEsc(o.source)} · ` : ""}${Math.round(o.kwh)} kWh · ${o.inverter_kw} kW${o.kw < o.inverter_kw ? ` <small>(${o.kw} kW)</small>` : ""}</td><td>${pct(g.covered)}%</td><td>${((g.gridEmpty + g.gridPower) / n).toFixed(1)}</td><td>${this._money(o.total, 0)}</td></tr>`;
     }).join("");
     return `<div class="lbl">${opt.kwh} kWh battery, ${opt.usable.toFixed(1)} kWh usable · ${opt.kw} kW from the battery${opt.kw < opt.inverter_kw ? ` (the battery's limit, below the ${opt.inverter_kw} kW inverter)` : ""} · on ${this._cfg.compare && this._scenarios().cmp ? evcEsc(this._cfg.compare.name || "the new tariff") : "your tariff"}</div>
       <div>
@@ -714,7 +748,7 @@ class EvCockpitCard extends HTMLElement {
       </div>
       <div class="lbl">${f.peak90 > opt.usable ? `To cover 9 days in 10 you'd need about ${kwh(f.peak90)} usable${opt.packs ? `: ${packs} battery pack${packs === 1 ? "" : "s"}` : ""}.` : "This battery holds enough for 9 days in 10."}
         Readings are hourly, so short spikes above ${opt.kw} kW (an oven and kettle together) also draw a little from the grid.</div>
-      ${opts.length > 1 ? `<table class="cmp"><tr><th>Battery</th><th>Days covered</th><th>Grid kWh/day</th><th>Installed</th></tr>${rows}</table>` : ""}
+      ${opts.length > 1 ? `<table class="cmp"><tr><th>${opts[0].quote ? "Quote" : "Battery"}</th><th>Days covered</th><th>Grid kWh/day</th><th>Installed</th></tr>${rows}</table>` : ""}
       <div class="lbl">Based on ${n} day${n === 1 ? "" : "s"} of your real usage.</div>`;
   }
 
@@ -871,6 +905,11 @@ class EvCockpitCard extends HTMLElement {
     }
   }
   _onChange(e) {
+    if (e.target.dataset && e.target.dataset.quote != null) {
+      const o = this._battOptions()[+e.target.value];
+      if (o) { this._ui.inv = o.i; this._saveQuotePick(o.source); this._renderDynamic(); }
+      return;
+    }
     const r = e.target.dataset && e.target.dataset.range;
     if (!r) return;
     this._setLimit(+e.target.value);

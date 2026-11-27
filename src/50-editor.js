@@ -49,6 +49,15 @@ class EvCockpitCardEditor extends HTMLElement {
         { type: "grid", name: "", schema: [num("offpeak_rate", "Off-peak rate"), num("peak_rate", "Peak rate"), hour("offpeak_start", "Off-peak starts"), hour("offpeak_end", "Off-peak ends"), num("standing_charge", "Standing charge")] },
       ] },
       { name: "home_battery", type: "expandable", title: "Home battery to compare (optional)", schema: [
+        { name: "quotes", label: "Quotes (pick one on the card; these replace the Fogstar prices)", selector: { object: { multiple: true, label_field: "source", fields: {
+          source: { label: "Source (installer or shop)", required: true, selector: { text: {} } },
+          battery_kwh: { label: "Battery capacity (kWh)", selector: { number: { min: 0, step: 0.1, mode: "box" } } },
+          usable_kwh: { label: "Usable capacity (kWh, optional)", selector: { number: { min: 0, step: 0.1, mode: "box" } } },
+          battery_cost: { label: "Battery cost", selector: { number: { min: 0, step: 1, mode: "box" } } },
+          inverter_kw: { label: "Inverter power (kW)", selector: { number: { min: 0, step: 0.1, mode: "box" } } },
+          inverter_cost: { label: "Inverter cost", selector: { number: { min: 0, step: 1, mode: "box" } } },
+          install_cost: { label: "Installation cost", selector: { number: { min: 0, step: 1, mode: "box" } } },
+        } } } },
         { name: "preset", label: "Battery", selector: { select: { mode: "dropdown", options: [
           { value: "fogstar", label: "Fogstar 16.1 kWh + inverter bundles" }, { value: "custom", label: "My own battery (capacity and cost below)" }] } } },
         { type: "grid", name: "", schema: [num("install_cost", "Installation cost (default 2500 for Fogstar)", 1), num("usable", "Usable share (0–1, default 0.95)", 0.01),
